@@ -11,6 +11,7 @@ services:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     volumes:
       - ../web/frontend/app:/app
+    stop_grace_period: 1s
   backend:
     build:
       context: ../web/backend
@@ -38,10 +39,13 @@ services:
       - "${LLM_PORT}:${LLM_PORT}"
   db:
     image: postgres
+    container_name: ${DB_HOST}
+    environment:
+      - POSTGRES_PORT=${DB_PORT}
     env_file:
       - ./public.env
     expose:
-      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+      - "${DB_PORT}:${DB_PORT}"
     volumes:
       - db_data:/var/lib/postgresql/data
   proxy:
