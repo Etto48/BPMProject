@@ -1,0 +1,44 @@
+services:
+  frontend:
+    build:
+      context: ../web/frontend
+      dockerfile: Dockerfile
+    image: ${FRONTEND_HOST}
+    container_name: ${FRONTEND_HOST}
+    env_file:
+      - ./public.env
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+    volumes:
+      - ../web/frontend/app:/app
+  backend:
+    build:
+      context: ../web/backend
+      dockerfile: Dockerfile
+    image: ${BACKEND_HOST}
+    container_name: ${BACKEND_HOST}
+    env_file:
+      - ./public.env
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    volumes:
+      - ../web/backend/app:/app:ro
+  proxy:
+    build:
+      context: ../web/proxy
+      dockerfile: Dockerfile
+      args:
+        - BACKEND_HOST=${BACKEND_HOST}
+        - BACKEND_PORT=${BACKEND_PORT}
+        - FRONTEND_HOST=${FRONTEND_HOST}
+        - FRONTEND_PORT=${FRONTEND_PORT}
+    image: ${PROXY_HOST}
+    container_name: ${PROXY_HOST}
+    env_file:
+      - ./public.env
+    ports:
+      - ${PROXY_PORT}:${PROXY_PORT}
+      - ${PROXY_SSL_PORT}:${PROXY_SSL_PORT}
+    depends_on:
+      - frontend
+      - backend
