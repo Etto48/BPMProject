@@ -36,6 +36,14 @@ services:
       - ./public.env
     expose:
       - "${LLM_PORT}:${LLM_PORT}"
+  db:
+    image: postgres
+    env_file:
+      - ./public.env
+    expose:
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+    volumes:
+      - db_data:/var/lib/postgresql/data
   proxy:
     build:
       context: ../web/proxy
@@ -55,3 +63,6 @@ services:
     depends_on:
       - frontend
       - backend
+
+volumes:
+  db_data:
