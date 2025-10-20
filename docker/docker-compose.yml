@@ -7,7 +7,7 @@ services:
     container_name: ${FRONTEND_HOST}
     env_file:
       - ./public.env
-    ports:
+    expose:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     volumes:
       - ../web/frontend/app:/app
@@ -19,10 +19,23 @@ services:
     container_name: ${BACKEND_HOST}
     env_file:
       - ./public.env
-    ports:
+    expose:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     volumes:
       - ../web/backend/app:/app:ro
+  llm:
+    build:
+      context: ../llm
+      dockerfile: Dockerfile
+      args:
+        - LLM_MODEL=${LLM_MODEL}
+        - LLM_PORT=${LLM_PORT}
+    image: ${LLM_HOST}
+    container_name: ${LLM_HOST}
+    env_file:
+      - ./public.env
+    expose:
+      - "${LLM_PORT}:${LLM_PORT}"
   proxy:
     build:
       context: ../web/proxy
