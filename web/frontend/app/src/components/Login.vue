@@ -253,8 +253,6 @@ h1 {
     .login-background {
         background-size: cover;
         background-position: center;
-        bottom: 0;
-        left: 0;
         width: 100vw;
         height: 100vh;
     }
@@ -274,14 +272,10 @@ h1 {
     }
 
     .card {
-        position: relative;
-        right: 0;
-        left: 0;
-        transform: none;
-        width: calc(100% - 32px);
-        max-width: 400px;
-        padding: 1.5rem;
-        margin: clamp(30px, 6vh, 50px) auto clamp(30px, 6vh, 50px);
+        left: calc(50% - 10px);
+        top: 250px;
+        transform: translate(-50%, 0);
+        width: min(calc(100% - 32px), 500px);
     }
 
     h1 {

@@ -74,5 +74,11 @@
     padding: 10px 20px;
     border-radius: 5px;
     cursor: pointer;
-    transition: background 0.3s ease;
+    transition: filter 0.2s ease;
+}
+
+@media (hover: hover) {
+    .gradient-button:hover {
+        filter: brightness(1.2);
+    }
 }
