@@ -1,6 +1,7 @@
 import fastapi
 import logging
-from fastapi import HTTPException, Depends, Request, JSONResponse
+from fastapi import HTTPException, Depends, Request
+from fastapi.responses import JSONResponse
 from database import UserDB
 from auth import hash_password, verify_password
 from models import UserData, UserResponse
