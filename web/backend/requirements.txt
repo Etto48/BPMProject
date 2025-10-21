@@ -3,3 +3,7 @@ fastapi
 openai
 pydantic
 colorlog
+psycopg[binary,pool]
+bcrypt
+itsdangerous
+starlette
