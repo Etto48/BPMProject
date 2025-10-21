@@ -8,8 +8,7 @@ import ProjectCard from './ProjectCard.vue';
     <main>
         <h2>Dashboard</h2>
         <div class="project-list">
-            <ProjectCard risk_kind="threat" title="Project 1" description="This is a description of Project 1." />
-            <ProjectCard risk_kind="opportunity" title="Project 2" description="This is a description of Project 2." />
+            <ProjectCard title="Project 1" description="This is a description of Project 1." />
             <NewProjectButton />
         </div>
     </main>

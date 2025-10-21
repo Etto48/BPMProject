@@ -27,6 +27,38 @@
     padding: 4px;
 }
 
+.gradient-background {
+    background: linear-gradient(135deg, var(--color-accent-1), var(--color-accent-2));
+    color: #fff;
+}
+
+.gradient-background-light {
+    background: linear-gradient(135deg, var(--color-accent-1-light), var(--color-accent-2-light));
+    color: var(--color-text);
+}
+
+@media (hover: hover) {
+    .hoverable .gradient-background {
+        background: linear-gradient(135deg, var(--color-accent-1), var(--color-accent-2));
+        filter: brightness(1.0);
+        transition: filter 0.2s ease;
+    }
+    
+    .hoverable .gradient-background-light {
+        background: linear-gradient(135deg, var(--color-accent-1-light), var(--color-accent-2-light));
+        filter: brightness(1.0);
+        transition: filter 0.2s ease;
+    }
+
+    .hoverable:hover .gradient-background {
+        filter: brightness(1.2);
+    }
+    
+    .hoverable:hover .gradient-background-light {
+        filter: brightness(1.2);
+    }
+}
+
 .gradient-text {
     background: linear-gradient(135deg, var(--color-accent-1), var(--color-accent-2));
     -webkit-background-clip: text;
