@@ -26,5 +26,5 @@ async def lifespan(app: fastapi.FastAPI):
     logger.info("Database connection closed.")
 
 app = fastapi.FastAPI(lifespan=lifespan, docs_url="/api/docs", redoc_url="/api/redoc", openapi_url="/api/openapi.json")
-app.add_middleware(SessionMiddleware, secret_key="supersecretkey")
+app.add_middleware(SessionMiddleware, secret_key="supersecretkey") # In production, use a secure key from environment variables
 app.include_router(api)

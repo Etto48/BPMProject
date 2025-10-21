@@ -1,8 +1,8 @@
 import psycopg
 from typing import Optional
-from models import UserResponse
+from models import UserResponse, UserInDB
 
-class UserDB:
+class UserRepository:
     def __init__(self, connection: psycopg.AsyncConnection):
         self.conn = connection
 
@@ -23,14 +23,17 @@ class UserDB:
             # Username already exists
             return None
 
-    async def get_user_by_username(self, username: str) -> Optional[tuple]:
+    async def get_user_by_username(self, username: str) -> Optional[UserInDB]:
         """Get user by username, returns (id, username, password_hash)"""
         async with self.conn.cursor() as cursor:
             await cursor.execute(
                 "SELECT id, username, password_hash FROM users WHERE username = %s",
                 (username,)
             )
-            return await cursor.fetchone()
+            row = await cursor.fetchone()
+            if row:
+                return UserInDB(id=row[0], username=row[1], password_hash=row[2])
+            return None
 
     async def get_user_by_id(self, user_id: int) -> Optional[UserResponse]:
         """Get user by ID"""

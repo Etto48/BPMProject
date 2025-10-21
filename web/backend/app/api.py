@@ -2,21 +2,21 @@ import fastapi
 import logging
 from fastapi import HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
-from database import UserDB
+from database import UserRepository
 from auth import hash_password, verify_password
-from models import UserData, UserResponse
+from models import UserData, UserResponse, UserInDB
 
 logger = logging.getLogger(__name__)
 
 api = fastapi.APIRouter(prefix="/api")
 
 
-def get_db(request: Request) -> UserDB:
+def get_db(request: Request) -> UserRepository:
     """Dependency to get database connection"""
-    return UserDB(request.app.state.db)
+    return UserRepository(request.app.state.db)
 
 
-async def get_current_user(request: Request, db: UserDB = Depends(get_db)) -> UserResponse:
+async def get_current_user(request: Request, db: UserRepository = Depends(get_db)) -> UserResponse:
     """Dependency to get current authenticated user"""
     user_id = request.session.get("user_id")
     if not user_id:
@@ -38,7 +38,7 @@ async def get_current_user(request: Request, db: UserDB = Depends(get_db)) -> Us
 
 
 @api.post("/register", response_model=UserResponse)
-async def register(user_data: UserData, db: UserDB = Depends(get_db)):
+async def register(user_data: UserData, db: UserRepository = Depends(get_db)):
     """Register a new user"""
     # Hash the password
     password_hash = hash_password(user_data.password)
@@ -60,7 +60,7 @@ async def register(user_data: UserData, db: UserDB = Depends(get_db)):
 async def login(
     request: Request,
     user_data: UserData,
-    db: UserDB = Depends(get_db)
+    db: UserRepository = Depends(get_db)
 ):
     """Login user and create session"""
     # Get user from database
@@ -71,9 +71,11 @@ async def login(
             status_code=400,
             detail="Invalid credentials"
         )
-    
-    user_id, stored_username, password_hash = db_user_data
-    
+
+    user_id = db_user_data.id
+    stored_username = db_user_data.username
+    password_hash = db_user_data.password_hash
+
     # Verify password
     if not verify_password(user_data.password, password_hash):
         raise HTTPException(
