@@ -38,7 +38,15 @@ services:
     expose:
       - "${LLM_PORT}:${LLM_PORT}"
   db:
-    image: postgres
+    build:
+      context: ../web/db
+      dockerfile: Dockerfile
+      args:
+        - DB_USER=${POSTGRES_USER}
+        - DB_PASSWORD=${POSTGRES_PASSWORD}
+        - DB_NAME=${POSTGRES_DB}
+        - DB_PORT=${POSTGRES_PORT}
+    image: ${DB_HOST}
     container_name: ${DB_HOST}
     environment:
       - POSTGRES_PORT=${DB_PORT}
