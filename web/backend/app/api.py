@@ -48,7 +48,7 @@ async def register(user_data: UserData, db: UserRepository = Depends(get_db)):
     
     if user is None:
         raise HTTPException(
-            status_code=400,
+            status_code=409,
             detail="Username already exists"
         )
     
@@ -68,7 +68,7 @@ async def login(
     
     if db_user_data is None:
         raise HTTPException(
-            status_code=400,
+            status_code=401,
             detail="Invalid credentials"
         )
 
@@ -79,7 +79,7 @@ async def login(
     # Verify password
     if not verify_password(user_data.password, password_hash):
         raise HTTPException(
-            status_code=400,
+            status_code=401,
             detail="Invalid credentials"
         )
     
@@ -97,7 +97,7 @@ async def me(current_user: UserResponse = Depends(get_current_user)):
     return current_user
 
 
-@api.post("/logout")
+@api.get("/logout")
 def logout(request: Request):
     """Logout user and clear session"""
     username = request.session.get("username")

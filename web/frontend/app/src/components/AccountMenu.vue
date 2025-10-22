@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import { ChevronDown } from 'lucide-vue-next';
+import Cookies from 'js-cookie';
+
+const accountName = Cookies.get('session');
+
+if (!accountName) {
+    window.location.href = '/login';
+}
 
 </script>
 
 <template>
     <div>
         <img alt="Account Icon" src="@/assets/account-icon.svg" width="32" height="32" />
-        <span>Account Name</span>
+        <span>{{ accountName }}</span>
         <ChevronDown />
     </div>
 </template>

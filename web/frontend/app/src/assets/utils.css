@@ -156,6 +156,30 @@
     }
 }
 
+.gradient-button:disabled {
+    background: var(--color-border);
+    cursor: not-allowed;
+    filter: brightness(0.5);
+}
+
+.secondary-button {
+    background-color: var(--color-background-mute);
+    color: var(--color-text);
+    font-weight: 700;
+    font-size: 16px;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: filter 0.2s ease;
+}
+
+@media (hover: hover) {
+    .secondary-button:hover {
+        filter: brightness(1.2);
+    }
+}
+
 .input-gradient-border {
     position: relative;
     border-radius: 8px;
@@ -224,4 +248,14 @@
 
 .capsule {
     border-radius: 9999px;
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.flex-row {
+    display: flex;
+    flex-direction: row;
 }
