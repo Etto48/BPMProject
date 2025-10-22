@@ -415,12 +415,11 @@ h1 {
     .title-container {
         position: relative;
         left: 0;
+        top: 60px;
         right: 0;
-        transform: none;
         justify-content: center;
         align-items: center;
         gap: 1rem;
-        flex-direction: column;
         margin: clamp(30px, 8vh, 60px) auto 0;
         width: 100%;
         padding: 0 16px;

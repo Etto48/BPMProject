@@ -4,7 +4,7 @@ import { RouterLink, RouterView, useRoute } from 'vue-router';
 import AccountMenu from '@/components/AccountMenu.vue';
 
 const route = useRoute();
-const isLoginView = computed(() => route.name === 'login');
+const isLoginView = computed(() => route.name === 'login' || route.name == null);
 </script>
 
 <template>
