@@ -703,7 +703,7 @@ const hoveredPoints = ref<Set<string>>(new Set())
 
 .threshold-value {
     font-size: 1.1rem;
-    color: var(--color-accent-1);
+    color: var(--color-text)
 }
 
 .threshold-slider {
@@ -767,6 +767,7 @@ const hoveredPoints = ref<Set<string>>(new Set())
     
     .qualitative-analysis {
         max-width: 600px;
+        height: fit-content;
     }
     
     .content-wrapper {

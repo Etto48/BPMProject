@@ -40,7 +40,6 @@ import { RiskKind } from '@/types';
     flex-direction: row;
     gap: 2rem;
     justify-content: center;
-    flex-wrap: wrap;
 }
 
 .threat-log h2, .opportunity-log h2 {
@@ -72,4 +71,12 @@ h2 {
     font-size: 1.5rem;
     text-align: center;
 }
+
+@media (max-width: 768px) {
+    .risk-discovery-container {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+}
+
 </style>
