@@ -23,6 +23,10 @@ server {{
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         
+        # Cookie handling
+        proxy_set_header Cookie $http_cookie;
+        proxy_pass_header Set-Cookie;
+        
         # Timeout settings
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
@@ -36,6 +40,10 @@ server {{
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Cookie handling
+        proxy_set_header Cookie $http_cookie;
+        proxy_pass_header Set-Cookie;
         
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;

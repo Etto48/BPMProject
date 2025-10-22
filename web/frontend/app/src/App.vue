@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router';
+import { computed } from 'vue';
+import { RouterLink, RouterView, useRoute } from 'vue-router';
 import AccountMenu from '@/components/AccountMenu.vue';
 
-const isLoginView = window.location.pathname === '/login';
+const route = useRoute();
+const isLoginView = computed(() => route.name === 'login' || route.name == null);
 </script>
 
 <template>

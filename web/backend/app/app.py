@@ -20,7 +20,8 @@ SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey") # In production, use a se
 @asynccontextmanager
 async def lifespan(app: fastapi.FastAPI):
     app.state.db = await psycopg.AsyncConnection.connect(
-        f"host={DB_HOST} port={DB_PORT} user={DB_USER} password={DB_PASSWORD} dbname={DB_NAME}"
+        f"host={DB_HOST} port={DB_PORT} user={DB_USER} password={DB_PASSWORD} dbname={DB_NAME}",
+        autocommit=True
     )
     logger.info("Database connection established.")
     yield
@@ -28,5 +29,13 @@ async def lifespan(app: fastapi.FastAPI):
     logger.info("Database connection closed.")
 
 app = fastapi.FastAPI(lifespan=lifespan, docs_url="/api/docs", redoc_url="/api/redoc", openapi_url="/api/openapi.json")
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SECRET_KEY,  # In production, use a secure key from environment variables
+    max_age=14 * 24 * 60 * 60,  # 14 days in seconds
+    same_site="lax",
+    https_only=False,  # Set to True in production with HTTPS
+    path="/",
+    domain=None  # Let the browser determine the domain
+)
 app.include_router(api)

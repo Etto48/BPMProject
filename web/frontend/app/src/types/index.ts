@@ -7,3 +7,23 @@ export enum RiskKind {
   /** A potential opportunity or positive risk */
   Opportunity = 'opportunity'
 }
+
+export type Risk = {
+  title: string
+  kind: RiskKind
+  description: string
+}
+
+export type RiskSuggestion = Risk & {
+  accepted: boolean
+}
+
+export type UserData = {
+  username: string
+  password: string
+}
+
+export type UserResponse = {
+  id: number
+  username: string
+}

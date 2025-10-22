@@ -1,11 +1,108 @@
 <!-- eslint-disable vue/multi-word-component-names -->
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useCurrentUser } from '@/composables/useCurrentUser';
+import type { UserData } from '@/types';
 import backgroundSvgDark from '../assets/background-dark.svg';
 import backgroundSvgLight from '../assets/background-light.svg';
 import logoSvg from '../assets/logo.svg';
 
+const router = useRouter();
+const { fetchUser } = useCurrentUser();
+
+const username = ref('');
+const password = ref('');
+const confirmPassword = ref('');
 const activeTab = ref<'login' | 'register'>('login');
+const errorMessage = ref('');
+const hasError = ref(false);
+
+const passwordsMatch = computed(() => {
+    return password.value === confirmPassword.value && password.value !== '';
+});
+
+const showPasswordMismatch = computed(() => {
+    return activeTab.value === 'register' && 
+           confirmPassword.value !== '' && 
+           password.value !== confirmPassword.value;
+});
+
+const isRegisterDisabled = computed(() => {
+    return activeTab.value === 'register' && !passwordsMatch.value;
+});
+
+function clearError() {
+    errorMessage.value = '';
+    hasError.value = false;
+}
+
+function login() {
+    const body: UserData = {
+        username: username.value,
+        password: password.value
+    };
+    fetch('/api/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(body),
+    }).then(async (response) => {
+        if (response.ok) {
+            await fetchUser(); // Fetch user data after successful login
+            router.push('/');
+        } else {
+            hasError.value = true;
+            if (response.status === 401) {
+                errorMessage.value = 'Invalid username or password';
+            } else {
+                errorMessage.value = 'An error occurred. Please try again.';
+            }
+        }
+    }).catch(() => {
+        hasError.value = true;
+        errorMessage.value = 'Network error. Please check your connection.';
+    });
+}
+
+function register() {
+    const body: UserData = {
+        username: username.value,
+        password: password.value
+    };
+
+    fetch('/api/register', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(body),
+    }).then(async (response) => {
+        if (response.ok) {
+            await fetchUser(); // Fetch user data after successful registration
+            router.push('/');
+        } else {
+            hasError.value = true;
+            if (response.status === 409) {
+                errorMessage.value = 'Username already exists';
+            } else {
+                errorMessage.value = 'An error occurred. Please try again.';
+            }
+        }
+    }).catch(() => {
+        hasError.value = true;
+        errorMessage.value = 'Network error. Please check your connection.';
+    });
+}
+
+function selectTab(tab: 'login' | 'register') {
+    activeTab.value = tab;
+    clearError();
+}
+
 </script>
 
 <template>
@@ -19,39 +116,52 @@ const activeTab = ref<'login' | 'register'>('login');
         <div class="tab-selector">
             <button 
                 :class="{ active: activeTab === 'login' }"
-                @click="activeTab = 'login'"
+                @click="selectTab('login')"
             >
                 Login
             </button>
             <button 
                 :class="{ active: activeTab === 'register' }"
-                @click="activeTab = 'register'"
+                @click="selectTab('register')"
             >
                 Register
             </button>
         </div>
 
+        <Transition name="error-fade">
+            <div v-if="hasError" class="error-message">
+                {{ errorMessage }}
+            </div>
+        </Transition>
+
         <div class="input-group">
             <label for="username">Username</label>
-            <div class="input-wrapper input-gradient-border">
-                <input id="username" type="text" placeholder="Enter your username" class="styled-input" />
+            <div class="input-wrapper input-gradient-border" :class="{ 'error-border': hasError }">
+                <input id="username" type="text" placeholder="Enter your username" class="styled-input" v-model="username" @input="clearError" />
             </div>
         </div>
         <div class="input-group">
             <label for="password">Password</label>
-            <div class="input-wrapper input-gradient-border">
-                <input id="password" type="password" placeholder="Enter your password" class="styled-input" />
+            <div class="input-wrapper input-gradient-border" :class="{ 'error-border': hasError }">
+                <input id="password" type="password" placeholder="Enter your password" class="styled-input" v-model="password" @input="clearError" />
             </div>
         </div>
         <Transition name="slide-fade">
             <div v-if="activeTab === 'register'" class="input-group">
                 <label for="confirm-password">Confirm Password</label>
                 <div class="input-wrapper input-gradient-border">
-                    <input id="confirm-password" type="password" placeholder="Confirm your password" class="styled-input" />
+                    <input id="confirm-password" type="password" placeholder="Confirm your password" class="styled-input" v-model="confirmPassword" />
                 </div>
             </div>
         </Transition>
-        <button class="gradient-button">{{ activeTab === 'login' ? 'Login' : 'Register' }}</button>
+        
+        <Transition name="error-fade">
+            <div v-if="showPasswordMismatch" class="warning-message">
+                Passwords do not match
+            </div>
+        </Transition>
+        
+        <button class="gradient-button" :disabled="isRegisterDisabled" @click="activeTab === 'login' ? login() : register()">{{ activeTab === 'login' ? 'Login' : 'Register' }}</button>
     </div>
 </template>
 
@@ -65,8 +175,33 @@ const activeTab = ref<'login' | 'register'>('login');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: left bottom;
-    filter: blur(15px);
+    
     pointer-events: none;
+    animation: background-animation 10s ease-in-out infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+    @keyframes background-animation {
+        0%, 100% {
+            filter: blur(20px) brightness(0.8);
+            transform: scale(1.05);
+        }
+        50% {
+            filter: blur(7px) brightness(1);
+            transform: scale(1.3);
+        }
+    }    
+}
+
+@keyframes background-animation {
+    0%, 100% {
+        filter: blur(20px) brightness(1.2);
+        transform: scale(1.05);
+    }
+    50% {
+        filter: blur(7px) brightness(1);
+        transform: scale(1.3);
+    }
 }
 
 .login-background.light {
@@ -91,10 +226,21 @@ const activeTab = ref<'login' | 'register'>('login');
     position: absolute;
     top: 50%;
     left: 200px;
-    transform: translate(0, -50%);
     display: flex;
     align-items: center;
     gap: 2rem;
+    animation: title-animation 1s ease forwards;
+}
+
+@keyframes title-animation {
+    0% {
+        filter: blur(30px);
+        transform: scale(3) translate(0, 0);
+    }
+    100% {
+        filter: blur(0px);
+        transform: scale(1) translate(0, -50%);
+    }
 }
 
 .logo {
@@ -159,7 +305,62 @@ h1 {
     margin-top: 0.5rem;
 }
 
+.gradient-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(0.5);
+}
+
+/* Error message */
+.error-message {
+    background-color: rgba(var(--color-threat-rgb, 220, 38, 38), 0.1);
+    color: var(--color-threat);
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border: 1px solid var(--color-threat);
+}
+
+/* Warning message */
+.warning-message {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #f59e0b;
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border: 1px solid #f59e0b;
+    text-align: center;
+}
+
+/* Error border for inputs */
+.input-wrapper.error-border {
+    border: 2px solid var(--color-threat) !important;
+    background: linear-gradient(var(--color-background), var(--color-background)) padding-box,
+                linear-gradient(125deg, var(--color-threat), var(--color-threat)) border-box !important;
+}
+
 /* Transition animations */
+.error-fade-enter-active,
+.error-fade-leave-active {
+    transition: all 0.3s ease;
+}
+
+.error-fade-enter-from,
+.error-fade-leave-to {
+    opacity: 0;
+    transform: translateY(-10px);
+}
+
+.error-fade-enter-to,
+.error-fade-leave-from {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 .slide-fade-enter-active,
 .slide-fade-leave-active {
     transition: all 0.3s ease;
@@ -214,12 +415,11 @@ h1 {
     .title-container {
         position: relative;
         left: 0;
+        top: 60px;
         right: 0;
-        transform: none;
         justify-content: center;
         align-items: center;
         gap: 1rem;
-        flex-direction: column;
         margin: clamp(30px, 8vh, 60px) auto 0;
         width: 100%;
         padding: 0 16px;

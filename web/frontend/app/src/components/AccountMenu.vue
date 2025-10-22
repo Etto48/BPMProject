@@ -1,12 +1,17 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { ChevronDown } from 'lucide-vue-next';
+import { useCurrentUser } from '@/composables/useCurrentUser';
+
+const { currentUser, isLoading } = useCurrentUser();
+const accountName = computed(() => currentUser.value?.username || '');
 
 </script>
 
 <template>
-    <div>
+    <div v-if="!isLoading && currentUser">
         <img alt="Account Icon" src="@/assets/account-icon.svg" width="32" height="32" />
-        <span>Account Name</span>
+        <span>{{ accountName }}</span>
         <ChevronDown />
     </div>
 </template>

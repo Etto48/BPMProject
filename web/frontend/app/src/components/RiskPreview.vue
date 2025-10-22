@@ -1,23 +1,41 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { RiskKind } from '@/types';
+import { defineEmits, computed } from 'vue';
+import { RiskKind, type RiskSuggestion } from '@/types';
 
-const risk_kind = ref<RiskKind>(RiskKind.Threat);
+const props = defineProps<{
+    index: number
+    suggestions: Array<RiskSuggestion>
+}>();
+
+const currentRisk = computed(() => {
+    return props.suggestions[props.index] || {
+        kind: RiskKind.Opportunity,
+        title: '',
+        description: '',
+        accepted: false
+    };
+});
+
+defineEmits<{
+    (e: 'accept'): void
+    (e: 'reject'): void
+}>();
+
 </script>
 
 <template>
-    <div class="card risk-preview" :class="risk_kind === RiskKind.Opportunity ? 'opportunity-border' : 'threat-border'">
+    <div class="card risk-preview" :class="currentRisk.kind === RiskKind.Opportunity ? 'opportunity-border' : 'threat-border'">
         <div class="tab-selector">
             <button 
-                :class="{ active: risk_kind === RiskKind.Opportunity }"
-                @click="risk_kind = RiskKind.Opportunity"
+                :class="{ active: currentRisk.kind === RiskKind.Opportunity }"
+                @click="currentRisk.kind = RiskKind.Opportunity"
                 class="opportunity-tab"
             >
                 Opportunity
             </button>
             <button 
-                :class="{ active: risk_kind === RiskKind.Threat }"
-                @click="risk_kind = RiskKind.Threat"
+                :class="{ active: currentRisk.kind === RiskKind.Threat }"
+                @click="currentRisk.kind = RiskKind.Threat"
                 class="threat-tab"
             >
                 Threat
@@ -25,15 +43,19 @@ const risk_kind = ref<RiskKind>(RiskKind.Threat);
         </div>
         <div class="input-group">
             <label for="risk-title">Title</label>
-            <div class="input-wrapper" :class="risk_kind === RiskKind.Opportunity ? 'input-opportunity-border' : 'input-threat-border'">
-                <input id="risk-title" class="title styled-input" type="text" :placeholder="risk_kind === RiskKind.Opportunity ? 'Opportunity title' : 'Threat title'" />
+            <div class="input-wrapper" :class="currentRisk.kind === RiskKind.Opportunity ? 'input-opportunity-border' : 'input-threat-border'">
+                <input id="risk-title" class="title styled-input" type="text" :placeholder="currentRisk.kind === RiskKind.Opportunity ? 'Opportunity title' : 'Threat title'" v-model="currentRisk.title"/>
             </div>
         </div>
         <div class="input-group">
             <label for="risk-description">Description</label>
-            <div class="input-wrapper" :class="risk_kind === RiskKind.Opportunity ? 'input-opportunity-border' : 'input-threat-border'">
-                <textarea id="risk-description" class="description styled-input textarea-input" :placeholder="risk_kind === RiskKind.Opportunity ? 'Opportunity description' : 'Threat description'" rows="5"></textarea>
+            <div class="input-wrapper" :class="currentRisk.kind === RiskKind.Opportunity ? 'input-opportunity-border' : 'input-threat-border'">
+                <textarea id="risk-description" class="description styled-input textarea-input" :placeholder="currentRisk.kind === RiskKind.Opportunity ? 'Opportunity description' : 'Threat description'" rows="5" v-model="currentRisk.description"></textarea>
             </div>
+        </div>
+        <div class="button-wrapper" :class="currentRisk.title === '' || currentRisk.description === '' ? 'disabled' : ''">
+            <button class="secondary-button" @click="$emit('reject')">Reject</button>
+            <button class="gradient-button" @click="$emit('accept')" :disabled="currentRisk.title === '' || currentRisk.description === ''">{{ currentRisk.kind === RiskKind.Opportunity ? 'Add Opportunity' : 'Add Threat' }}</button>
         </div>
     </div>
 </template>
@@ -44,6 +66,20 @@ const risk_kind = ref<RiskKind>(RiskKind.Threat);
     min-width: 300px;
     padding: 2rem;
     transition: border-color 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: stretch;
+}
+
+.button-wrapper {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.button-wrapper button {
+    flex: 1;
 }
 
 /* Threat Border */
@@ -99,6 +135,10 @@ const risk_kind = ref<RiskKind>(RiskKind.Threat);
     transition: all 0.3s ease;
 }
 
+.input-group:has(textarea) {
+    flex: 1;
+}
+
 .input-group label {
     display: block;
     margin-bottom: 0.5rem;
@@ -111,6 +151,7 @@ const risk_kind = ref<RiskKind>(RiskKind.Threat);
     position: relative;
     border-radius: 8px;
     transition: all 0.3s ease;
+    height: calc(100% - 2rem);
 }
 
 /* Threat Input Border */
@@ -188,6 +229,7 @@ const risk_kind = ref<RiskKind>(RiskKind.Threat);
 .textarea-input {
     resize: none;
     min-height: 120px;
+    height: 100%;
     font-family: inherit;
     line-height: 1.5;
 }
