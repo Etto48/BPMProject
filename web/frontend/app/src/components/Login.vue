@@ -1,14 +1,16 @@
 <!-- eslint-disable vue/multi-word-component-names -->
 <script setup lang="ts">
 import { ref } from 'vue';
-import backgroundSvg from '../assets/background.svg';
+import backgroundSvgDark from '../assets/background-dark.svg';
+import backgroundSvgLight from '../assets/background-light.svg';
 import logoSvg from '../assets/logo.svg';
 
 const activeTab = ref<'login' | 'register'>('login');
 </script>
 
 <template>
-    <div class="login-background" :style="{ backgroundImage: `url(${backgroundSvg})` }"></div>
+    <div class="login-background light" :style="{ backgroundImage: `url(${backgroundSvgLight})` }"></div>
+    <div class="login-background dark" :style="{ backgroundImage: `url(${backgroundSvgDark})` }"></div>
     <div class="title-container">
         <img :src="logoSvg" alt="AIRA Logo" class="logo" />
         <h1 class="gradient-text">AIRA</h1>
@@ -65,6 +67,24 @@ const activeTab = ref<'login' | 'register'>('login');
     background-position: left bottom;
     filter: blur(15px);
     pointer-events: none;
+}
+
+.login-background.light {
+    display: block;
+}
+
+.login-background.dark {
+    display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    .login-background.light {
+        display: none;
+    }
+    
+    .login-background.dark {
+        display: block;
+    }
 }
 
 .title-container {
