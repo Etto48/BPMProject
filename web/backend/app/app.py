@@ -18,7 +18,8 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
 @asynccontextmanager
 async def lifespan(app: fastapi.FastAPI):
     app.state.db = await psycopg.AsyncConnection.connect(
-        f"host={DB_HOST} port={DB_PORT} user={DB_USER} password={DB_PASSWORD} dbname={DB_NAME}"
+        f"host={DB_HOST} port={DB_PORT} user={DB_USER} password={DB_PASSWORD} dbname={DB_NAME}",
+        autocommit=True
     )
     logger.info("Database connection established.")
     yield
