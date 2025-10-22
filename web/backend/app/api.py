@@ -2,21 +2,25 @@ import fastapi
 import logging
 from fastapi import HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
-from database import UserRepository
+from database import UserRepository, ProjectRepository
 from auth import hash_password, verify_password
-from models import UserData, UserResponse, UserInDB
+from models import ProjectData, UserData, UserResponse, UserInDB
 
 logger = logging.getLogger(__name__)
 
 api = fastapi.APIRouter(prefix="/api")
 
 
-def get_db(request: Request) -> UserRepository:
+def get_user_repository(request: Request) -> UserRepository:
     """Dependency to get database connection"""
     return UserRepository(request.app.state.db)
 
+def get_project_repository(request: Request) -> ProjectRepository:
+    """Dependency to get project database connection"""
+    return ProjectRepository(request.app.state.db)
 
-async def get_current_user(request: Request, db: UserRepository = Depends(get_db)) -> UserResponse:
+
+async def get_current_user(request: Request, db: UserRepository = Depends(get_user_repository)) -> UserResponse:
     """Dependency to get current authenticated user"""
     user_id = request.session.get("user_id")
     if not user_id:
@@ -38,7 +42,7 @@ async def get_current_user(request: Request, db: UserRepository = Depends(get_db
 
 
 @api.post("/register", response_model=UserResponse)
-async def register(request: Request, user_data: UserData, db: UserRepository = Depends(get_db)):
+async def register(request: Request, user_data: UserData, db: UserRepository = Depends(get_user_repository)):
     """Register a new user"""
     # Hash the password
     password_hash = hash_password(user_data.password)
@@ -64,7 +68,7 @@ async def register(request: Request, user_data: UserData, db: UserRepository = D
 async def login(
     request: Request,
     user_data: UserData,
-    db: UserRepository = Depends(get_db)
+    db: UserRepository = Depends(get_user_repository)
 ):
     """Login user and create session"""
     logger.info(f"Login attempt for user: {user_data.username}")
@@ -108,7 +112,7 @@ async def me(current_user: UserResponse = Depends(get_current_user)):
 
 
 @api.get("/logout")
-def logout(request: Request):
+def logout(request: Request) -> JSONResponse:
     """Logout user and clear session"""
     username = request.session.get("username")
     if username:
@@ -118,3 +122,55 @@ def logout(request: Request):
     response = JSONResponse({"message": "Logged out"})
     response.delete_cookie("session")
     return response
+
+@api.post("/projects")
+async def create_project(
+    request: Request,
+    project_data: ProjectData,
+    db: ProjectRepository = Depends(get_project_repository),
+) -> dict:
+    if "user_id" not in request.session:
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+
+    user_id = request.session["user_id"]
+    await db.create_project(project_data, user_id)
+    return {"message": "Project created"}
+
+@api.get("/projects/")
+async def get_project(
+    request: Request,
+    project_id: int,
+    db: ProjectRepository = Depends(get_project_repository),
+) -> ProjectData:
+    if "user_id" not in request.session:
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    user_id = request.session["user_id"]
+
+    project = await db.get_project_by_id(project_id, user_id)
+    if project is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found"
+        )
+    return project
+
+@api.get("/projects")
+async def list_projects(
+    request: Request,
+    db: ProjectRepository = Depends(get_project_repository),
+) -> list[ProjectData]:
+    if "user_id" not in request.session:
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    user_id = request.session["user_id"]
+
+    projects = await db.get_projects_by_user_id(user_id)
+    return projects

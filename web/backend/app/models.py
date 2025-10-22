@@ -13,3 +13,7 @@ class UserInDB(BaseModel):
     id: int
     username: str
     password_hash: str
+
+class ProjectData(BaseModel):
+    name: str
+    description: str
