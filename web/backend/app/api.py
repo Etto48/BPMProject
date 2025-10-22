@@ -38,7 +38,7 @@ async def get_current_user(request: Request, db: UserRepository = Depends(get_db
 
 
 @api.post("/register", response_model=UserResponse)
-async def register(user_data: UserData, db: UserRepository = Depends(get_db)):
+async def register(request: Request, user_data: UserData, db: UserRepository = Depends(get_db)):
     """Register a new user"""
     # Hash the password
     password_hash = hash_password(user_data.password)
@@ -52,6 +52,10 @@ async def register(user_data: UserData, db: UserRepository = Depends(get_db)):
             detail="Username already exists"
         )
     
+    # Create session for the newly registered user
+    request.session["user_id"] = user.id
+    request.session["username"] = user.username
+    
     logger.info(f"User {user.username} registered successfully")
     return user
 
@@ -63,6 +67,10 @@ async def login(
     db: UserRepository = Depends(get_db)
 ):
     """Login user and create session"""
+    logger.info(f"Login attempt for user: {user_data.username}")
+    logger.info(f"Request headers: {dict(request.headers)}")
+    logger.info(f"Request cookies before: {request.cookies}")
+    
     # Get user from database
     db_user_data = await db.get_user_by_username(user_data.username)
     
@@ -87,6 +95,8 @@ async def login(
     request.session["user_id"] = user_id
     request.session["username"] = stored_username
     logger.info(f"User {user_data.username} logged in successfully")
+    logger.info(f"Session data set: user_id={user_id}, username={stored_username}")
+    logger.info(f"Session after setting: {dict(request.session)}")
     
     return {"message": "Logged in"}
 

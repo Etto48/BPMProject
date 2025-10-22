@@ -22,3 +22,8 @@ export type UserData = {
   username: string
   password: string
 }
+
+export type UserResponse = {
+  id: number
+  username: string
+}

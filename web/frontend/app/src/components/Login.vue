@@ -1,15 +1,15 @@
 <!-- eslint-disable vue/multi-word-component-names -->
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useCurrentUser } from '@/composables/useCurrentUser';
 import type { UserData } from '@/types';
 import backgroundSvgDark from '../assets/background-dark.svg';
 import backgroundSvgLight from '../assets/background-light.svg';
 import logoSvg from '../assets/logo.svg';
-import Cookies from 'js-cookie';
 
-if (Cookies.get('session')) {
-    window.location.href = '/';
-}
+const router = useRouter();
+const { fetchUser } = useCurrentUser();
 
 const username = ref('');
 const password = ref('');
@@ -47,10 +47,12 @@ function login() {
         headers: {
             'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(body),
     }).then(async (response) => {
         if (response.ok) {
-            window.location.href = '/';
+            await fetchUser(); // Fetch user data after successful login
+            router.push('/');
         } else {
             hasError.value = true;
             if (response.status === 401) {
@@ -76,10 +78,12 @@ function register() {
         headers: {
             'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify(body),
     }).then(async (response) => {
         if (response.ok) {
-            window.location.href = '/';
+            await fetchUser(); // Fetch user data after successful registration
+            router.push('/');
         } else {
             hasError.value = true;
             if (response.status === 409) {
