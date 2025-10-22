@@ -1,6 +1,10 @@
+<script setup lang="ts">
+import { Plus } from 'lucide-vue-next';
+</script>
+
 <template>
     <button class="new-project-button card">
-        <i class="bi bi-plus-lg"></i>
+        <Plus :size="64" />
     </button>
 </template>
 
@@ -16,14 +20,7 @@
     padding: 2rem;
     flex-grow: 1;
     transition: background-color 0.2s ease;
-}
-
-.new-project-button i {
-    font-size: 3rem;
-    display: block;
-    aspect-ratio: 1 / 1;
-    background-color: var(--color-border);
-    border-radius: 50%;
+    color: var(--color-text-opaque);
 }
 
 @media (hover: hover) {

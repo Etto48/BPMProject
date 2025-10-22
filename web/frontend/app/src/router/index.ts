@@ -13,6 +13,21 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
+    },
+    {
+      path: '/create-project',
+      name: 'create-project',
+      component: () => import('../views/CreateProjectView.vue'),
+    },
+    {
+      path: '/risk-discovery',
+      name: 'risk-discovery',
+      component: () => import('../views/RiskDiscoveryView.vue'),
+    },
+    {
+      path: '/qualitative-analysis',
+      name: 'qualitative-analysis',
+      component: () => import('../views/QualitativeAnalysisView.vue'),
     }
   ],
 })

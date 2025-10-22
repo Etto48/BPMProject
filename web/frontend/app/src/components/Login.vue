@@ -31,21 +31,21 @@ const activeTab = ref<'login' | 'register'>('login');
 
         <div class="input-group">
             <label for="username">Username</label>
-            <div class="input-wrapper">
-                <input id="username" type="text" placeholder="Enter your username" />
+            <div class="input-wrapper input-gradient-border">
+                <input id="username" type="text" placeholder="Enter your username" class="styled-input" />
             </div>
         </div>
         <div class="input-group">
             <label for="password">Password</label>
-            <div class="input-wrapper">
-                <input id="password" type="password" placeholder="Enter your password" />
+            <div class="input-wrapper input-gradient-border">
+                <input id="password" type="password" placeholder="Enter your password" class="styled-input" />
             </div>
         </div>
         <Transition name="slide-fade">
             <div v-if="activeTab === 'register'" class="input-group">
                 <label for="confirm-password">Confirm Password</label>
-                <div class="input-wrapper">
-                    <input id="confirm-password" type="password" placeholder="Confirm your password" />
+                <div class="input-wrapper input-gradient-border">
+                    <input id="confirm-password" type="password" placeholder="Confirm your password" class="styled-input" />
                 </div>
             </div>
         </Transition>
@@ -132,72 +132,6 @@ h1 {
     background: linear-gradient(125deg, var(--color-accent-1), var(--color-accent-2));
     color: #fff;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.input-group {
-    margin-bottom: 1.5rem;
-    transition: all 0.3s ease;
-}
-
-.input-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    font-size: 0.95rem;
-    color: var(--color-text);
-}
-
-.input-wrapper {
-    position: relative;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-.input-wrapper::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    z-index: -1;
-    border-radius: inherit;
-    background: linear-gradient(125deg, var(--color-accent-1), var(--color-accent-2));
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    padding: 2px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.input-wrapper:focus-within::before {
-    opacity: 1;
-}
-
-.input-group input {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    border: 2px solid var(--color-border, #e0e0e0);
-    border-radius: 8px;
-    font-size: 1rem;
-    background-color: var(--color-background-soft, #f5f5f5);
-    color: var(--color-text);
-    transition: all 0.3s ease;
-    box-sizing: border-box;
-    position: relative;
-    display: block;
-}
-
-.input-group input:focus {
-    outline: none;
-    border-color: transparent;
-    background-color: var(--color-background);
-}
-
-.input-group input::placeholder {
-    color: var(--color-text-muted, #999);
 }
 
 .gradient-button {

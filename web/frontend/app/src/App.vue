@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router';
 import AccountMenu from '@/components/AccountMenu.vue';
-import 'bootstrap-icons/font/bootstrap-icons.css'
 
 const isLoginView = window.location.pathname === '/login';
 </script>
