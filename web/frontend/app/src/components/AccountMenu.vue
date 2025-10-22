@@ -1,5 +1,5 @@
 <script setup lang="ts">
-
+import { ChevronDown } from 'lucide-vue-next';
 
 </script>
 
@@ -7,7 +7,7 @@
     <div>
         <img alt="Account Icon" src="@/assets/account-icon.svg" width="32" height="32" />
         <span>Account Name</span>
-        <i class="bi bi-caret-down-fill"></i>
+        <ChevronDown />
     </div>
 </template>
 
@@ -32,7 +32,7 @@ div {
         display: none;
     }
 
-    div i {
+    div svg {
         display: none;
     }
 }
