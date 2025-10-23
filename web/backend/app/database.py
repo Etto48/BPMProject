@@ -155,7 +155,8 @@ class ProjectRepository:
                                 )
                             )
                         else:
-                            return None  # Insertion failed
+                            # Rollback if any insertion fails
+                            raise psycopg.IntegrityError("Failed to insert risk")
                     return inserted_risks
         except psycopg.IntegrityError:
             return None
