@@ -6,8 +6,14 @@ import logging
 import psycopg
 
 from api import api
+from llm import LLM
 
 logger = logging.getLogger(__name__)
+
+LLM_HOST = os.getenv("LLM_HOST", "http://localhost:8000")
+LLM_PORT = os.getenv("LLM_PORT", "11434")
+LLM_MODEL = os.getenv("LLM_MODEL", "gemma3:latest")
+LLM_API_KEY = os.getenv("LLM_API_KEY", "")
 
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "5432")
@@ -24,6 +30,12 @@ async def lifespan(app: fastapi.FastAPI):
         autocommit=True
     )
     logger.info("Database connection established.")
+    app.state.llm = LLM(
+        url=f"http://{LLM_HOST}:{LLM_PORT}/v1",
+        model=LLM_MODEL,
+        api_key=LLM_API_KEY
+    )
+    logger.info("LLM client initialized.")
     yield
     await app.state.db.close()
     logger.info("Database connection closed.")

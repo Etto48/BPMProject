@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from database import UserRepository, ProjectRepository
 from auth import hash_password, verify_password
 from models import Project, ProjectInDB, Risk, RiskInDB, UserData, UserResponse, UserInDB
+from llm import LLM
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,9 @@ def get_project_repository(request: Request) -> ProjectRepository:
     """Dependency to get project database connection"""
     return ProjectRepository(request.app.state.db)
 
+def get_llm_client(request: Request):
+    """Dependency to get LLM client"""
+    return request.app.state.llm
 
 async def get_current_user(request: Request, db: UserRepository = Depends(get_user_repository)) -> UserResponse:
     """Dependency to get current authenticated user"""
@@ -188,6 +192,7 @@ async def generate_project_risks(
     request: Request,
     project_id: int,
     db: ProjectRepository = Depends(get_project_repository),
+    llm: LLM = Depends(get_llm_client),
 ) -> list[Risk]:
     if "user_id" not in request.session:
         raise HTTPException(
@@ -203,8 +208,7 @@ async def generate_project_risks(
             detail="Project not found"
         )
 
-    # Here you would normally call the LLM to generate risks based on the project details.
-    # For demonstration, we'll return a placeholder response.
+    # TODO: Call LLM
 
     generated_risks = [
         Risk(
@@ -217,7 +221,7 @@ async def generate_project_risks(
             title="Market Expansion",
             description="The project could open up opportunities to enter new markets and increase revenue."
         )
-                       ]
+    ]
 
     return generated_risks
 

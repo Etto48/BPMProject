@@ -25,6 +25,8 @@ services:
     volumes:
       - ../web/backend/app:/app:ro
     depends_on:
+      llm:
+        condition: service_started
       db:
         condition: service_healthy
   llm:
@@ -38,7 +40,7 @@ services:
     container_name: ${LLM_HOST}
     env_file:
       - ./public.env
-    expose:
+    ports:
       - "${LLM_PORT}:${LLM_PORT}"
   db:
     build:

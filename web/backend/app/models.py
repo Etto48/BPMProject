@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, RootModel
 from typing import Optional, Literal
 
 class UserResponse(BaseModel):
@@ -34,6 +34,9 @@ class Risk(BaseModel):
     description: str = Field(
         description="Detailed description of what the risk entails and the context that causes it"
     )
+
+class Risks(RootModel):
+    root: list[Risk]
 
 class ScoredRisk(Risk):
     impact: float = Field(
