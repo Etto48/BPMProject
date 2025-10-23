@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineEmits, computed } from 'vue';
+import { computed } from 'vue';
 import { RiskKind, type RiskSuggestion } from '@/types';
 
 const props = defineProps<{

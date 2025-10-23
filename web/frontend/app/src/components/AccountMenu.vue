@@ -51,32 +51,39 @@ onUnmounted(() => {
             <span>{{ accountName }}</span>
             <ChevronDown :class="{ rotated: isMenuOpen }" />
         </div>
-        <div v-if="isMenuOpen" class="dropdown-backdrop" @click="closeMenu"></div>
-        <div v-if="isMenuOpen" class="dropdown-menu">
-            <button @click="closeMenu" class="dropdown-item">
-                <User :size="20" />
-                <span>Profile</span>
-            </button>
-            <button @click="closeMenu" class="dropdown-item">
-                <Settings :size="20" />
-                <span>Settings</span>
-            </button>
-            <button @click="closeMenu" class="dropdown-item">
-                <HelpCircle :size="20" />
-                <span>Help</span>
-            </button>
-            <div class="dropdown-divider"></div>
-            <button @click="logout" class="dropdown-item">
-                <LogOut :size="20" />
-                <span>Logout</span>
-            </button>
-        </div>
+        <Transition name="backdrop">
+            <div v-if="isMenuOpen" class="dropdown-backdrop" @click="closeMenu"></div>
+        </Transition>
+        <Transition name="dropdown">
+            <div v-if="isMenuOpen" class="dropdown-menu">
+                <button @click="closeMenu" class="dropdown-item">
+                    <User :size="20" />
+                    <span>Profile</span>
+                </button>
+                <button @click="closeMenu" class="dropdown-item">
+                    <Settings :size="20" />
+                    <span>Settings</span>
+                </button>
+                <button @click="closeMenu" class="dropdown-item">
+                    <HelpCircle :size="20" />
+                    <span>Help</span>
+                </button>
+                <div class="dropdown-divider"></div>
+                <button @click="logout" class="dropdown-item">
+                    <LogOut :size="20" />
+                    <span>Logout</span>
+                </button>
+            </div>
+        </Transition>
     </div>
 </template>
 
 <style scoped>
 .account-menu-container {
     position: relative;
+    height: 100%;
+    display: flex;
+    align-items: stretch;
 }
 
 .account-button {
@@ -87,7 +94,13 @@ onUnmounted(() => {
     border: 2px solid var(--color-border);
     border-radius: 10px;
     padding: 0.5rem 1rem;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, border-radius 0.2s;
+    height: 100%;
+}
+
+.account-menu-container:has(.dropdown-menu) .account-button {
+    border-radius: 10px 10px 0 0;
+    border-bottom-color: transparent;
 }
 
 .account-button:hover {
@@ -108,17 +121,25 @@ onUnmounted(() => {
 
 .dropdown-menu {
     position: absolute;
-    top: calc(100% + 0.5rem);
+    top: 100%;
+    left: 0;
     right: 0;
     background-color: var(--color-background);
     border: 2px solid var(--color-border);
-    border-radius: 10px;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
     padding: 0.5rem;
-    min-width: 150px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     z-index: 1001;
+    transform-origin: top;
+}
+
+.dropdown-enter-active {
     animation: dropdownFadeIn 0.2s ease-out;
-    transform-origin: top right;
+}
+
+.dropdown-leave-active {
+    animation: dropdownFadeOut 0.2s ease-in;
 }
 
 .dropdown-item {
@@ -160,6 +181,11 @@ onUnmounted(() => {
         display: none;
     }
 
+    .account-menu-container:has(.dropdown-menu) .account-button {
+        border-radius: 10px;
+        border-bottom-color: var(--color-border);
+    }
+
     .account-menu-container {
         position: static;
     }
@@ -184,13 +210,30 @@ onUnmounted(() => {
         right: 0;
         width: 100%;
         min-width: unset;
+        border: 2px solid var(--color-border);
         border-radius: 20px 20px 0 0;
         padding: 1rem;
         box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
-        animation: slideUp 0.3s ease-out;
-        border-left: none;
-        border-right: none;
+        border-left: 2px solid var(--color-border);
+        border-right: 2px solid var(--color-border);
+        border-top: 2px solid var(--color-border);
         border-bottom: none;
+    }
+
+    .dropdown-enter-active {
+        animation: slideUp 0.3s ease-out;
+    }
+
+    .dropdown-leave-active {
+        animation: slideDown 0.3s ease-in;
+    }
+
+    .backdrop-enter-active {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .backdrop-leave-active {
+        animation: fadeOut 0.3s ease-in;
     }
 
     .dropdown-item {
@@ -212,11 +255,22 @@ onUnmounted(() => {
 @keyframes dropdownFadeIn {
     from {
         opacity: 0;
-        transform: translateY(-10px) scale(0.95);
+        transform: scaleY(0);
     }
     to {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: scaleY(1);
+    }
+}
+
+@keyframes dropdownFadeOut {
+    from {
+        opacity: 1;
+        transform: scaleY(1);
+    }
+    to {
+        opacity: 0;
+        transform: scaleY(0);
     }
 }
 
@@ -226,6 +280,26 @@ onUnmounted(() => {
     }
     to {
         opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(100%);
+        opacity: 0;
     }
 }
 

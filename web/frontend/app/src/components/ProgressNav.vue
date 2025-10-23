@@ -5,6 +5,13 @@ import { computed } from 'vue';
 const props = defineProps<{
     total: number;
     completed: number;
+    previousEnabled: boolean;
+    nextEnabled: boolean;
+}>();
+
+defineEmits<{
+    (e: 'navigate-next'): void,
+    (e: 'navigate-previous'): void
 }>();
 
 const maskImage = computed(() => {
@@ -25,7 +32,7 @@ const maskImage = computed(() => {
 
 <template>
     <div class="progress-nav">
-        <button class="nav-button"><ArrowLeft /></button>
+        <button class="nav-button" @click="$emit('navigate-previous')" :disabled="!props.previousEnabled"><ArrowLeft /></button>
         <div class="progress-indicator" :style="{ '--mask-image': maskImage }">
             <div 
                 v-for="index in total" 
@@ -34,7 +41,7 @@ const maskImage = computed(() => {
                 :class="{ 'completed': index <= completed }"
             />
         </div>
-        <button class="nav-button"><ArrowRight /></button>
+        <button class="nav-button" @click="$emit('navigate-next')" :disabled="!props.nextEnabled"><ArrowRight /></button>
     </div>
 </template>
 
@@ -99,8 +106,13 @@ const maskImage = computed(() => {
 }
 
 @media (hover: hover) {
-    .nav-button:hover {
+    .nav-button:hover:not(:disabled) {
         color: var(--color-accent-1);
     }
+}
+
+.nav-button:disabled {
+    cursor: unset;
+    opacity: 0;
 }
 </style>

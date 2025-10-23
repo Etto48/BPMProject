@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import type { Risk } from '@/types';
+import { X } from 'lucide-vue-next';
 
 defineProps<{
     threats: Array<Risk>,
     opportunities: Array<Risk>
+}>();
+
+defineEmits<{
+    (event: 'remove-risk', kind: 'threat' | 'opportunity', index: number): void
 }>();
 </script>
 
@@ -14,6 +19,7 @@ defineProps<{
             <div class="risk-list-container">
                 <div v-for="([i, opportunity]) in opportunities.entries()" :key="i" class="risk-entry opportunity capsule">
                     <h3 class="risk-title">{{ opportunity.title }}</h3>
+                    <X class="remove-risk" @click="$emit('remove-risk', 'opportunity', i)"/>
                 </div>
             </div>
         </div>
@@ -22,6 +28,7 @@ defineProps<{
             <div class="risk-list-container">
                 <div v-for="([i, threat]) in threats.entries()" :key="i" class="risk-entry threat capsule">
                     <h3 class="risk-title">{{ threat.title }}</h3>
+                    <X class="remove-risk" @click="$emit('remove-risk', 'threat', i)"/>
                 </div>
             </div>
         </div>
@@ -32,14 +39,27 @@ defineProps<{
 .risk-log {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
     margin: 0;
     flex: 1;
 }
+
 .threat-log, .opportunity-log {
     flex: 1;
     min-width: 300px;
     height: calc(50% - 1.5rem);
+}
+
+.remove-risk {
+    cursor: pointer;
+    color: var(--color-text-opaque);
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+@media (hover: hover) {
+    .remove-risk:hover {
+        opacity: 1;
+    }
 }
 
 .risk-list-container {
@@ -83,6 +103,9 @@ h2 {
     padding: 0.5rem 1rem;
     margin-bottom: 0.5rem;
     color: var(--color-text-opaque);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .risk-entry.threat {

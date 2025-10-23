@@ -27,6 +27,8 @@ defineProps<{
     width: 16px;
     height: 16px;
     border-radius: 50%;
+    transition: all 0.3s ease;
+    border: 0 solid transparent;
 }
 
 .dot.threat {

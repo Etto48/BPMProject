@@ -190,7 +190,7 @@ const hideTooltip = () => {
             :description="tooltip.description"
         />
         
-        <ProgressNav :total="5" :completed="4"/>
+        <ProgressNav :total="3" :completed="2" :previousEnabled="true" :nextEnabled="true"/>
     </div>
 </template>
 
