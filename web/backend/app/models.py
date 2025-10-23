@@ -12,7 +12,7 @@ class UserData(BaseModel):
 class UserInDB(BaseModel):
     id: int
     username: str
-    password_hash: str
+    passwordHash: str
 
 class Project(BaseModel):
     name: str
@@ -20,7 +20,7 @@ class Project(BaseModel):
 
 class ProjectInDB(Project):
     id: int
-    current_step: int
+    currentStep: int
 
 class Risk(BaseModel):
     type: Literal['threat', 'opportunity'] = Field(
@@ -35,6 +35,31 @@ class Risk(BaseModel):
         description="Detailed description of what the risk entails and the context that causes it"
     )
 
-class RiskInDB(Risk):
+class ScoredRisk(Risk):
+    impact: float = Field(
+        description="Numerical risk score between 1 and 10 indicating the impact of the risk"
+    )
+    probability: float = Field(
+        description="Numerical probability score between 1 and 10 indicating the likelihood of the risk occurring"
+    )
+
+class ManagedRisk(ScoredRisk):
+    contingency: Optional[str] = Field(
+        default=None,
+        description="Contingency plan describing preventive actions to avoid the risk from occurring"
+    )
+    fallback: Optional[str] = Field(
+        default=None,
+        description="Fallback plan describing actions to minimize damage if the risk occurs"
+    )
+
+class RiskInDB(BaseModel):
     id: int
-    project_id: int
+    projectId: int
+    type: Literal['threat', 'opportunity']
+    title: str
+    description: str
+    impact: Optional[int]
+    probability: Optional[int]
+    contingency: Optional[str]
+    fallback: Optional[str]

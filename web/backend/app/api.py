@@ -5,7 +5,7 @@ from fastapi import HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 from database import UserRepository, ProjectRepository
 from auth import hash_password, verify_password
-from models import Project, ProjectInDB, Risk, UserData, UserResponse, UserInDB
+from models import Project, ProjectInDB, Risk, RiskInDB, UserData, UserResponse, UserInDB
 
 logger = logging.getLogger(__name__)
 
@@ -87,10 +87,10 @@ async def login(
 
     user_id = db_user_data.id
     stored_username = db_user_data.username
-    password_hash = db_user_data.password_hash
+    passwordHash = db_user_data.passwordHash
 
     # Verify password
-    if not verify_password(user_data.password, password_hash):
+    if not verify_password(user_data.password, passwordHash):
         raise HTTPException(
             status_code=401,
             detail="Invalid credentials"
@@ -183,11 +183,12 @@ async def list_projects(
     projects = await db.get_projects_by_user_id(user_id)
     return projects
 
-@api.get("/projects/{project_id}/risks")
-async def get_project_risks(
+@api.get("/projects/{project_id}/gen/risks")
+async def generate_project_risks(
     request: Request,
     project_id: int,
-) -> Optional[list[Risk]]:
+    db: ProjectRepository = Depends(get_project_repository),
+) -> list[Risk]:
     if "user_id" not in request.session:
         raise HTTPException(
             status_code=401,
@@ -195,7 +196,67 @@ async def get_project_risks(
         )
     user_id = request.session["user_id"]
 
-    risks = None
-    # Here you would normally ask the LLM for risks based on the project details.
+    project = await db.get_project_by_id(project_id, user_id)
+    if project is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found"
+        )
+
+    # Here you would normally call the LLM to generate risks based on the project details.
+    # For demonstration, we'll return a placeholder response.
+
+    generated_risks = [
+        Risk(
+            type="threat",
+            title="Budget Overrun",
+            description="The project may exceed its allocated budget due to unforeseen expenses."
+        ),
+        Risk(
+            type="opportunity",
+            title="Market Expansion",
+            description="The project could open up opportunities to enter new markets and increase revenue."
+        )
+                       ]
+
+    return generated_risks
+
+@api.get("/projects/{project_id}/risks")
+async def get_project_risks(
+    request: Request,
+    project_id: int,
+    db: ProjectRepository = Depends(get_project_repository),
+) -> Optional[list[RiskInDB]]:
+    if "user_id" not in request.session:
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    user_id = request.session["user_id"]
+
+    risks = await db.get_project_risks(project_id, user_id)
 
     return risks
+
+@api.post("/projects/{project_id}/risks")
+async def add_project_risk(
+    request: Request,
+    project_id: int,
+    risks_data: list[Risk],
+    db: ProjectRepository = Depends(get_project_repository),
+) -> dict:
+    if "user_id" not in request.session:
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    user_id = request.session["user_id"]
+
+    added_risks = await db.add_project_risks(project_id, user_id, risks_data)
+    if not added_risks:
+        raise HTTPException(
+            status_code=409,
+            detail="Failed to add risks"
+        )
+
+    return {"message": "Risks added", "risks": added_risks}
