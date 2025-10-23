@@ -51,13 +51,20 @@ class ProjectRepository:
     def __init__(self, connection: psycopg.AsyncConnection):
         self.conn = connection
 
-    async def create_project(self, project: Project, user_id: int) -> None:
-        async with self.conn.transaction():
-            async with self.conn.cursor() as cursor:
-                await cursor.execute(
-                    "INSERT INTO projects (name, description, user_id) VALUES (%s, %s, %s)",
-                    (project.name, project.description, user_id)
-                )
+    async def create_project(self, project: Project, user_id: int) -> Optional[ProjectInDB]:
+        try:
+            async with self.conn.transaction():
+                async with self.conn.cursor() as cursor:
+                    await cursor.execute(
+                        "INSERT INTO projects (name, description, user_id) VALUES (%s, %s, %s) RETURNING id",
+                        (project.name, project.description, user_id)
+                    )
+                    project_id = await cursor.fetchone()
+                    if project_id:
+                        return ProjectInDB(id=project_id[0], name=project.name, description=project.description)
+                    return None
+        except psycopg.IntegrityError:
+            return None
 
     async def get_project_by_id(self, project_id: int, user_id: int) -> Optional[ProjectInDB]:
         async with self.conn.cursor() as cursor:

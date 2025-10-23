@@ -137,8 +137,15 @@ async def create_project(
         )
 
     user_id = request.session["user_id"]
-    await db.create_project(project_data, user_id)
-    return {"message": "Project created"}
+    project = await db.create_project(project_data, user_id)
+
+    if project is None:
+        raise HTTPException(
+            status_code=409,
+            detail="Failed to create project"
+        )
+
+    return {"message": "Project created", "id": project.id}
 
 @api.get("/projects/{project_id}")
 async def get_project(
