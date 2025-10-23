@@ -19,6 +19,7 @@ const acceptedOpportunities = ref<Array<RiskSuggestion>>([]);
 const showDescription = ref(false);
 const projectTitle = ref('');
 const projectDescription = ref('');
+const isLoadingRisks = ref(true);
 
 function actionOnCurrent(accept: boolean) {
     let currentRisk = suggestedRisks.value[currentSuggestionIndex.value];
@@ -77,9 +78,10 @@ function fetchProject() {
 }
 
 function fetchSuggestedRisks() {
+    isLoadingRisks.value = true;
     fetch(`/api/projects/${projectId}/gen/risks`, {
         method: 'GET',
-        credentials: 'include',
+        credentials: 'include'
     }).then(async (response) => {
         if (response.ok) {
             const data: Array<Risk> = await response.json();
@@ -98,9 +100,13 @@ function fetchSuggestedRisks() {
             });
         } else {
             console.error('Failed to fetch suggested risks');
+            router.push('/internal-server-error');
         }
     }).catch((error) => {
         console.error('Error fetching suggested risks:', error);
+        router.push('/internal-server-error');
+    }).finally(() => {
+        isLoadingRisks.value = false;
     })
 }
 
@@ -117,13 +123,15 @@ fetchSuggestedRisks();
                     <ChevronDown class="arrow" :class="{ 'open': showDescription }" :size="20" />
                 </h3>
                 <Transition name="description">
-                    <p v-if="showDescription" class="gradient-background-light project-description">{{ projectDescription }}</p>
+                    <div v-if="showDescription" class="gradient-background-light project-description">
+                        <p>{{ projectDescription }}</p>
+                    </div>
                 </Transition>
             </div>
             <RiskDiscoveryLog :threats="acceptedThreats" :opportunities="acceptedOpportunities" @remove-risk="remove_risk"/>
         </div>
         <div class="flex-column preview-wrapper">
-            <RiskSuggestionProgress :index="currentSuggestionIndex" :suggestions="suggestedRisks" />
+            <RiskSuggestionProgress :index="currentSuggestionIndex" :suggestions="suggestedRisks" :isLoading="isLoadingRisks" />
             <RiskPreview :index="currentSuggestionIndex" :suggestions="suggestedRisks" @accept="actionOnCurrent(true)" @reject="actionOnCurrent(false)"/>
         </div>
     </div>
@@ -164,8 +172,14 @@ fetchSuggestedRisks();
 .project-description {
     border-radius: 8px;
     padding: 1rem;
-    min-height: 80px;
     transition: filter 0.3s ease, background-color 0.2s ease;
+}
+
+.project-description p {
+    margin: 0;
+    display: block;
+    overflow-y: auto;
+    max-height: 100px;
 }
 
 .description-enter-active {
@@ -212,7 +226,7 @@ fetchSuggestedRisks();
     flex-direction: row;
     gap: 2rem;
     justify-content: center;
-    height: calc(100vh - 16rem);
+    height: calc(100vh - 13rem);
 }
 
 @media (max-width: 768px) {

@@ -30,7 +30,7 @@ server {{
         # Timeout settings
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
+        proxy_read_timeout 1d; # To allow for low-power servers
     }}
     
     # Handle /api without trailing slash

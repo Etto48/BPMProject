@@ -6,7 +6,8 @@ from fastapi.responses import JSONResponse
 from database import UserRepository, ProjectRepository
 from auth import hash_password, verify_password
 from models import Project, ProjectInDB, Risk, RiskInDB, ScoredRisk, TrackedManagedRisk, TrackedScoredRisk, UserData, UserResponse, UserInDB
-from llm import LLM  # type: ignore
+
+from llm import LLM
 
 logger = logging.getLogger(__name__)
 
@@ -208,20 +209,7 @@ async def generate_project_risks(
             detail="Project not found"
         )
 
-    # TODO: Call LLM
-
-    generated_risks = [
-        Risk(
-            kind="threat",
-            title="Budget Overrun",
-            description="The project may exceed its allocated budget due to unforeseen expenses."
-        ),
-        Risk(
-            kind="opportunity",
-            title="Market Expansion",
-            description="The project could open up opportunities to enter new markets and increase revenue."
-        )
-    ]
+    generated_risks = await llm.generate_risks(project)
 
     return generated_risks
 
