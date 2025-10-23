@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import DashboardView from '../views/DashboardView.vue'
+import Login from '../views/LoginView.vue'
 import { useCurrentUser } from '@/composables/useCurrentUser'
 
 const router = createRouter({
@@ -14,26 +15,31 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: () => import('../views/LoginView.vue'),
+      component: Login,
       meta: { requiresGuest: true }
     },
     {
-      path: '/create-project',
+      path: '/project/create',
       name: 'create-project',
       component: () => import('../views/CreateProjectView.vue'),
       meta: { requiresAuth: true }
     },
     {
-      path: '/risk-discovery',
+      path: '/project/:id/risk-discovery',
       name: 'risk-discovery',
       component: () => import('../views/RiskDiscoveryView.vue'),
       meta: { requiresAuth: true }
     },
     {
-      path: '/qualitative-analysis',
+      path: '/project/:id/qualitative-analysis',
       name: 'qualitative-analysis',
       component: () => import('../views/QualitativeAnalysisView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('../views/NotFoundView.vue')
     }
   ],
 })

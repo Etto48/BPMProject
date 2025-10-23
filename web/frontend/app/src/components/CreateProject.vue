@@ -1,4 +1,34 @@
 <script setup lang="ts">
+import type { Project } from '@/types';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
+function createProject() {
+    const project: Project = {
+        name: (document.getElementById('project-name') as HTMLInputElement).value,
+        description: (document.getElementById('project-description') as HTMLTextAreaElement).value,
+    }
+
+    fetch('/api/projects', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(project),
+    }).then(async (response) => {
+        if (response.ok) {
+            const id = (await response.json()).id;
+            router.push(`/project/${id}/risk-discovery`);
+        } else {
+            console.error('Failed to create project');
+        }
+    }).catch((error) => {
+        console.error('Error creating project:', error);
+    });
+}
+
 </script>
 
 <template>
@@ -16,7 +46,7 @@
                 <textarea id="project-description" placeholder="Describe in detail your project" class="styled-input textarea-input" rows="5"></textarea>
             </div>
         </div>
-        <button class="gradient-button">Create Project</button>
+        <button class="gradient-button" @click="createProject">Create Project</button>
     </div>
 </template>
 

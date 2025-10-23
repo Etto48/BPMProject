@@ -27,3 +27,13 @@ export type UserResponse = {
   id: number
   username: string
 }
+
+export type Project = {
+  name: string
+  description: string
+}
+
+export type ProjectInDB = Project & {
+  id: number
+  currentStep: number
+}
