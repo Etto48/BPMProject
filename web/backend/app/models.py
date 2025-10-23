@@ -15,7 +15,7 @@ class UserInDB(BaseModel):
     passwordHash: str
 
 class Project(BaseModel):
-    name: str
+    title: str
     description: str
 
 class ProjectInDB(Project):
@@ -23,7 +23,7 @@ class ProjectInDB(Project):
     currentStep: int
 
 class Risk(BaseModel):
-    type: Literal['threat', 'opportunity'] = Field(
+    kind: Literal['threat', 'opportunity'] = Field(
         description="'threat' for negative risks, 'opportunity' for positive risks"
     )
     
@@ -56,7 +56,7 @@ class ManagedRisk(ScoredRisk):
 class RiskInDB(BaseModel):
     id: int
     projectId: int
-    type: Literal['threat', 'opportunity']
+    kind: Literal['threat', 'opportunity']
     title: str
     description: str
     impact: Optional[int]

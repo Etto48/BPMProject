@@ -208,12 +208,12 @@ async def generate_project_risks(
 
     generated_risks = [
         Risk(
-            type="threat",
+            kind="threat",
             title="Budget Overrun",
             description="The project may exceed its allocated budget due to unforeseen expenses."
         ),
         Risk(
-            type="opportunity",
+            kind="opportunity",
             title="Market Expansion",
             description="The project could open up opportunities to enter new markets and increase revenue."
         )

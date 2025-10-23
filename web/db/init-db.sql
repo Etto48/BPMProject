@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS projects (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    name VARCHAR(150) NOT NULL,
+    title VARCHAR(150) NOT NULL,
     description TEXT,
     current_step NUMERIC DEFAULT 0
 );
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS risks (
     project_id INT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     description TEXT NOT NULL,
-    type risk_type NOT NULL,
+    kind risk_type NOT NULL,
     probability NUMERIC,
     impact NUMERIC,
     contingency TEXT,

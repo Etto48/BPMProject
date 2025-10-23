@@ -56,12 +56,12 @@ class ProjectRepository:
             async with self.conn.transaction():
                 async with self.conn.cursor() as cursor:
                     await cursor.execute(
-                        "INSERT INTO projects (name, description, user_id) VALUES (%s, %s, %s) RETURNING id",
-                        (project.name, project.description, userId)
+                        "INSERT INTO projects (title, description, user_id) VALUES (%s, %s, %s) RETURNING id",
+                        (project.title, project.description, userId)
                     )
                     projectId = await cursor.fetchone()
                     if projectId:
-                        return ProjectInDB(id=projectId[0], name=project.name, description=project.description, currentStep=0)
+                        return ProjectInDB(id=projectId[0], title=project.title, description=project.description, currentStep=0)
                     return None
         except psycopg.IntegrityError:
             return None
@@ -69,29 +69,29 @@ class ProjectRepository:
     async def get_project_by_id(self, projectId: int, userId: int) -> Optional[ProjectInDB]:
         async with self.conn.cursor() as cursor:
             await cursor.execute(
-                "SELECT name, description, current_step FROM projects WHERE id = %s AND user_id = %s",
+                "SELECT title, description, current_step FROM projects WHERE id = %s AND user_id = %s",
                 (projectId, userId)
             )
             row = await cursor.fetchone()
             if row:
-                return ProjectInDB(id=projectId, name=row[0], description=row[1], currentStep=row[2])
+                return ProjectInDB(id=projectId, title=row[0], description=row[1], currentStep=row[2])
             return None
 
     async def get_projects_by_user_id(self, userId: int) -> list[ProjectInDB]:
         async with self.conn.cursor() as cursor:
             await cursor.execute(
-                "SELECT id, name, description, current_step FROM projects WHERE user_id = %s",
+                "SELECT id, title, description, current_step FROM projects WHERE user_id = %s",
                 (userId,)
             )
             rows = await cursor.fetchall()
-            return [ProjectInDB(id=row[0], name=row[1], description=row[2], currentStep=row[3]) for row in rows]
-        
+            return [ProjectInDB(id=row[0], title=row[1], description=row[2], currentStep=row[3]) for row in rows]
+
 
     async def get_project_risks(self, projectId: int, userId: int) -> Optional[list[RiskInDB]]:
         async with self.conn.cursor() as cursor:
             await cursor.execute(
                 """
-                SELECT r.id, r.type, r.title, r.description, r.impact, r.probability, r.contingency, r.fallback
+                SELECT r.id, r.kind, r.title, r.description, r.impact, r.probability, r.contingency, r.fallback
                 FROM risks r
                 JOIN projects p ON r.project_id = p.id
                 WHERE p.id = %s AND p.user_id = %s
@@ -103,7 +103,7 @@ class ProjectRepository:
                 return [
                     RiskInDB(
                         id=row[0],
-                        type=row[1],
+                        kind=row[1],
                         title=row[2],
                         description=row[3],
                         impact=row[4],
@@ -133,11 +133,11 @@ class ProjectRepository:
                     for risk in risks_data:
                         await cursor.execute(
                             """
-                            INSERT INTO risks (project_id, type, title, description)
+                            INSERT INTO risks (project_id, kind, title, description)
                             VALUES (%s, %s, %s, %s)
-                            RETURNING id, type, title, description
+                            RETURNING id, kind, title, description
                             """,
-                            (projectId, risk.type, risk.title, risk.description)
+                            (projectId, risk.kind, risk.title, risk.description)
                         )
                         row = await cursor.fetchone()
                         if row:
@@ -145,7 +145,7 @@ class ProjectRepository:
                                 RiskInDB(
                                     id=row[0],
                                     projectId=projectId,
-                                    type=row[1],
+                                    kind=row[1],
                                     title=row[2],
                                     description=row[3],
                                     impact=None,
