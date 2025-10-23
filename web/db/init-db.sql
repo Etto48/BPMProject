@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS projects (
     user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(150) NOT NULL,
     description TEXT,
-    current_step NUMERIC DEFAULT 0
+    current_step NUMERIC DEFAULT 0,
+    risk_score_threshold NUMERIC DEFAULT 0.1
 );
 
 -- Risks table

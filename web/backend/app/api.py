@@ -5,8 +5,8 @@ from fastapi import HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 from database import UserRepository, ProjectRepository
 from auth import hash_password, verify_password
-from models import Project, ProjectInDB, Risk, RiskInDB, UserData, UserResponse, UserInDB
-from llm import LLM
+from models import Project, ProjectInDB, Risk, RiskInDB, ScoredRisk, TrackedManagedRisk, TrackedScoredRisk, UserData, UserResponse, UserInDB
+from llm import LLM  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ def get_project_repository(request: Request) -> ProjectRepository:
     """Dependency to get project database connection"""
     return ProjectRepository(request.app.state.db)
 
-def get_llm_client(request: Request):
+def get_llm_client(request: Request) -> LLM:
     """Dependency to get LLM client"""
     return request.app.state.llm
 
@@ -264,3 +264,185 @@ async def add_project_risk(
         )
 
     return {"message": "Risks added", "risks": added_risks}
+
+
+@api.get("/projects/{project_id}/gen/risks/scores")
+async def generate_risk_scores(
+    request: Request,
+    project_id: int,
+    db: ProjectRepository = Depends(get_project_repository),
+    llm: LLM = Depends(get_llm_client),
+) -> list[TrackedScoredRisk]:
+    if "user_id" not in request.session:
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    user_id = request.session["user_id"]
+
+    project = await db.get_project_by_id(project_id, user_id)
+    if project is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found"
+        )
+
+    risks = await db.get_project_risks(project_id, user_id)
+    if not risks:
+        raise HTTPException(
+            status_code=404,
+            detail="No risks found for the project"
+        )
+    
+    # TODO: Call LLM to generate risk scores (impact and probability)
+
+    scored_risks = [
+        TrackedScoredRisk(
+            id=1,
+            kind='threat',
+            title='Supplier bankruptcy risk',
+            description='Our main component supplier is facing financial difficulties due to market downturn. If they go bankrupt, we would need to find alternative suppliers, causing delays of 2-3 months in the production schedule and requiring re-certification of new components.',
+            impact=8,
+            probability=4
+        ),
+        TrackedScoredRisk(
+            id=2,
+            kind='opportunity',
+            title='Early framework release',
+            description='The UI framework we depend on is ahead of schedule and may release version 2.0 earlier than expected. This would allow us to leverage improved performance features and reduce our custom workaround code by approximately 30%.',
+            impact=6,
+            probability=7
+        ),
+        TrackedScoredRisk(
+            id=3,
+            kind='threat',
+            title='Key developer resignation',
+            description='Our lead backend developer has been approached by competitors and may leave the company. This developer holds critical knowledge about our legacy authentication system and their departure would significantly slow down the planned security upgrade.',
+            impact=9,
+            probability=5
+        )
+    ]
+
+    return scored_risks
+
+@api.post("/projects/{project_id}/risks/scores")
+async def add_risk_scores(
+    request: Request,
+    project_id: int,
+    scored_risks: list[TrackedScoredRisk],
+    riskScoreThreshold: float = 0.1,
+    db: ProjectRepository = Depends(get_project_repository),
+) -> dict:
+    if "user_id" not in request.session:
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    user_id = request.session["user_id"]
+
+    project = await db.get_project_by_id(project_id, user_id)
+    if project is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found"
+        )
+    updated_risks = await db.add_project_risks_scores(project_id, user_id, scored_risks, riskScoreThreshold)
+    if not updated_risks:
+        raise HTTPException(
+            status_code=409,
+            detail="Failed to add risk scores"
+        )
+    return {"message": "Risk scores added", "risks": updated_risks}
+
+@api.get("/projects/{project_id}/gen/risks/plans")
+async def generate_risk_plans(
+    request: Request,
+    project_id: int,
+    db: ProjectRepository = Depends(get_project_repository),
+    llm: LLM = Depends(get_llm_client),
+) -> list[TrackedManagedRisk]:
+    if "user_id" not in request.session:
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    user_id = request.session["user_id"]
+
+    project = await db.get_project_by_id(project_id, user_id)
+    if project is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found"
+        )
+
+    risks = await db.get_project_risks(project_id, user_id)
+    if not risks:
+        raise HTTPException(
+            status_code=404,
+            detail="No risks found for the project"
+        )
+    
+    # TODO: Call LLM to generate risk plans
+
+    managed_risks = [
+        TrackedManagedRisk(
+            id=1,
+            kind='threat',
+            title='Supplier bankruptcy risk',
+            description='Our main component supplier is facing financial difficulties due to market downturn. If they go bankrupt, we would need to find alternative suppliers, causing delays of 2-3 months in the production schedule and requiring re-certification of new components.',
+            impact=8,
+            probability=4,
+            contingency="Identify and pre-qualify two alternative suppliers. Maintain regular communication with current supplier to monitor their financial health.",
+            fallback="Activate emergency procurement from pre-qualified suppliers and expedite component re-certification process using parallel testing."
+        ),
+        TrackedManagedRisk(
+            id=2,
+            kind='opportunity',
+            title='Early framework release',
+            description='The UI framework we depend on is ahead of schedule and may release version 2.0 earlier than expected. This would allow us to leverage improved performance features and reduce our custom workaround code by approximately 30%.',
+            impact=6,
+            probability=7,
+            contingency="Allocate developer time to test beta versions and prepare migration plan. Document potential breaking changes early.",
+            fallback=None
+        ),
+        TrackedManagedRisk(
+            id=3,
+            kind='threat',
+            title='Key developer resignation',
+            description='Our lead backend developer has been approached by competitors and may leave the company. This developer holds critical knowledge about our legacy authentication system and their departure would significantly slow down the planned security upgrade.',
+            impact=9,
+            probability=5,
+            contingency="Conduct knowledge transfer sessions and create comprehensive documentation of the authentication system. Cross-train two junior developers.",
+            fallback="Hire a specialized contractor with authentication system experience and delay non-critical features to focus resources on the security upgrade."
+        )
+    ]
+
+    return managed_risks
+
+@api.post("/projects/{project_id}/risks/plans")
+async def add_risk_plans(
+    request: Request,
+    project_id: int,
+    managed_risks: list[TrackedManagedRisk],
+    db: ProjectRepository = Depends(get_project_repository),
+) -> dict:
+    if "user_id" not in request.session:
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    user_id = request.session["user_id"]
+
+    project = await db.get_project_by_id(project_id, user_id)
+    if project is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found"
+        )
+    updated_risks = await db.add_project_risks_plans(project_id, user_id, managed_risks)
+    if not updated_risks:
+        raise HTTPException(
+            status_code=409,
+            detail="Failed to add risk plans"
+        )
+    return {"message": "Risk plans added", "risks": updated_risks}

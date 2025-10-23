@@ -21,6 +21,7 @@ class Project(BaseModel):
 class ProjectInDB(Project):
     id: int
     currentStep: int
+    riskScoreThreshold: float
 
 class Risk(BaseModel):
     kind: Literal['threat', 'opportunity'] = Field(
@@ -39,12 +40,15 @@ class Risks(RootModel):
     root: list[Risk]
 
 class ScoredRisk(Risk):
-    impact: float = Field(
+    impact: int = Field(
         description="Numerical risk score between 1 and 10 indicating the impact of the risk"
     )
-    probability: float = Field(
+    probability: int = Field(
         description="Numerical probability score between 1 and 10 indicating the likelihood of the risk occurring"
     )
+
+class TrackedScoredRisk(ScoredRisk):
+    id: int
 
 class ManagedRisk(ScoredRisk):
     contingency: Optional[str] = Field(
@@ -55,6 +59,9 @@ class ManagedRisk(ScoredRisk):
         default=None,
         description="Fallback plan describing actions to minimize damage if the risk occurs"
     )
+
+class TrackedManagedRisk(ManagedRisk):
+    id: int
 
 class RiskInDB(BaseModel):
     id: int

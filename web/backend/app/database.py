@@ -1,6 +1,6 @@
 import psycopg
 from typing import Optional
-from models import ProjectInDB, RiskInDB, UserResponse, UserInDB, Project
+from models import ProjectInDB, RiskInDB, TrackedScoredRisk, TrackedManagedRisk, UserResponse, UserInDB, Project
 
 class UserRepository:
     def __init__(self, connection: psycopg.AsyncConnection):
@@ -61,7 +61,7 @@ class ProjectRepository:
                     )
                     projectId = await cursor.fetchone()
                     if projectId:
-                        return ProjectInDB(id=projectId[0], title=project.title, description=project.description, currentStep=0)
+                        return ProjectInDB(id=projectId[0], title=project.title, description=project.description, currentStep=0, riskScoreThreshold=0.1)
                     return None
         except psycopg.IntegrityError:
             return None
@@ -69,25 +69,25 @@ class ProjectRepository:
     async def get_project_by_id(self, projectId: int, userId: int) -> Optional[ProjectInDB]:
         async with self.conn.cursor() as cursor:
             await cursor.execute(
-                "SELECT title, description, current_step FROM projects WHERE id = %s AND user_id = %s",
+                "SELECT title, description, current_step, risk_score_threshold FROM projects WHERE id = %s AND user_id = %s",
                 (projectId, userId)
             )
             row = await cursor.fetchone()
             if row:
-                return ProjectInDB(id=projectId, title=row[0], description=row[1], currentStep=row[2])
+                return ProjectInDB(id=projectId, title=row[0], description=row[1], currentStep=row[2], riskScoreThreshold=row[3])
             return None
 
     async def get_projects_by_user_id(self, userId: int) -> list[ProjectInDB]:
         async with self.conn.cursor() as cursor:
             await cursor.execute(
-                "SELECT id, title, description, current_step FROM projects WHERE user_id = %s",
+                "SELECT id, title, description, current_step, risk_score_threshold FROM projects WHERE user_id = %s",
                 (userId,)
             )
             rows = await cursor.fetchall()
-            return [ProjectInDB(id=row[0], title=row[1], description=row[2], currentStep=row[3]) for row in rows]
+            return [ProjectInDB(id=row[0], title=row[1], description=row[2], currentStep=row[3], riskScoreThreshold=row[4]) for row in rows]
 
 
-    async def get_project_risks(self, projectId: int, userId: int) -> Optional[list[RiskInDB]]:
+    async def get_project_risks(self, projectId: int, userId: int) -> list[RiskInDB]:
         async with self.conn.cursor() as cursor:
             await cursor.execute(
                 """
@@ -113,9 +113,9 @@ class ProjectRepository:
                         projectId=projectId
                     ) for row in rows
                 ]
-            return None
+            return []
 
-    async def add_project_risks(self, projectId, userId, risks_data):
+    async def add_project_risks(self, projectId, userId, risks_data) -> Optional[list[RiskInDB]]:
         try:
             async with self.conn.transaction():
                 async with self.conn.cursor() as cursor:
@@ -155,7 +155,53 @@ class ProjectRepository:
                                 )
                             )
                         else:
-                            raise Exception("Failed to insert risk")
+                            return None  # Insertion failed
                     return inserted_risks
-        except Exception as e:
+        except psycopg.IntegrityError:
             return None
+        
+    async def add_project_risks_scores(self, projectId: int, userId: int, scored_risks: list[TrackedScoredRisk], riskScoreThreshold: float) -> bool:
+        try:
+            async with self.conn.transaction():
+                async with self.conn.cursor() as cursor:
+                    # Update project's risk score threshold
+                    await cursor.execute(
+                        """
+                        UPDATE projects
+                        SET risk_score_threshold = %s
+                        WHERE id = %s
+                        """,
+                        (riskScoreThreshold, projectId)
+                    )
+                    # Update risks with scores
+                    for risk in scored_risks:
+                        await cursor.execute(
+                            """
+                            UPDATE risks
+                            SET impact = %s, probability = %s
+                            WHERE id = %s AND project_id = %s
+                            """,
+                            (risk.impact, risk.probability, risk.id, projectId)
+                        )
+                    return True
+        except psycopg.IntegrityError:
+            return False
+        
+    async def add_project_risks_plans(self, projectId: int, userId: int, managed_risks: list[TrackedManagedRisk]) -> bool:
+        try:
+            async with self.conn.transaction():
+                async with self.conn.cursor() as cursor:
+                    for risk in managed_risks:
+                        await cursor.execute(
+                            """
+                            UPDATE risks
+                            SET contingency = %s, fallback = %s
+                            WHERE id = %s AND project_id = %s
+                            """,
+                            (risk.contingency, risk.fallback, risk.id, projectId)
+                        )
+                    return True
+        except psycopg.IntegrityError:
+            return False
+        
+    
