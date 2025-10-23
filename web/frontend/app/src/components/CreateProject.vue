@@ -6,7 +6,7 @@ const router = useRouter();
 
 function createProject() {
     const project: Project = {
-        name: (document.getElementById('project-name') as HTMLInputElement).value,
+        title: (document.getElementById('project-title') as HTMLInputElement).value,
         description: (document.getElementById('project-description') as HTMLTextAreaElement).value,
     }
 
@@ -35,9 +35,9 @@ function createProject() {
     <div class="card gradient-border">
         <h2 class="gradient-text gradient-border-bottom">Create New Project</h2>
         <div class="input-group">
-            <label for="project-name">Project Name</label>
+            <label for="project-title">Project Title</label>
             <div class="input-wrapper input-gradient-border">
-                <input id="project-name" type="text" placeholder="Enter your project name" class="styled-input" />
+                <input id="project-title" type="text" placeholder="Enter your project name" class="styled-input" />
             </div>
         </div>
         <div class="input-group">

@@ -29,7 +29,7 @@ export type UserResponse = {
 }
 
 export type Project = {
-  name: string
+  title: string
   description: string
 }
 
