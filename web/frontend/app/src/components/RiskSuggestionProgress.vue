@@ -4,13 +4,19 @@ import { type RiskSuggestion } from '@/types';
 defineProps<{
     index: number
     suggestions: Array<RiskSuggestion>
+    isLoading?: boolean
 }>()
 </script>
 
 
 <template>
     <div class="risk-suggestion-progress">
-        <div v-for="([i, suggestion]) in suggestions.entries()" :key="i" class="dot" :class="suggestion.kind + ' ' + (i === index ? 'active' : '') + ' ' + (suggestion.accepted ? 'accepted' : '') + ' ' + (i === suggestions.length - 1 ? 'custom' : '')"></div>
+        <template v-if="isLoading">
+            <div v-for="i in 5" :key="`loading-${i}`" class="dot loading" :style="{ animationDelay: `${i * 0.15}s` }"></div>
+        </template>
+        <template v-else>
+            <div v-for="([i, suggestion]) in suggestions.entries()" :key="i" class="dot" :class="suggestion.kind + ' ' + (i === index ? 'active' : '') + ' ' + (suggestion.accepted ? 'accepted' : '') + ' ' + (i === suggestions.length - 1 ? 'custom' : '')"></div>
+        </template>
     </div>
 </template>
 
@@ -49,5 +55,21 @@ defineProps<{
 
 .dot:not(.accepted):not(.active) {
     opacity: 0.4;
+}
+
+.dot.loading {
+    background: linear-gradient(135deg, var(--color-accent-1) 0%, var(--color-accent-2) 100%);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.4;
+    }
+    50% {
+        transform: scale(1.3);
+        opacity: 1;
+    }
 }
 </style>

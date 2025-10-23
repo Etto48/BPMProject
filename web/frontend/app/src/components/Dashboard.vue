@@ -59,12 +59,9 @@ fetchProjects();
 
 <style scoped>
     .project-list {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
         width: 100%;
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-content: flex-start;
-        justify-content: flex-start;
         gap: 1rem;
     }
 

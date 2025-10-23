@@ -21,7 +21,6 @@ class LLM:
         )
         return
 
-
     async def generate_risks(self, project: Project):
         response = await self.client.chat.completions.parse(
             model=self.model,

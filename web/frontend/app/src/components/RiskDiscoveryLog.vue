@@ -41,6 +41,7 @@ defineEmits<{
     flex-direction: column;
     margin: 0;
     flex: 1;
+    height: calc(100% - 16rem);
 }
 
 .threat-log, .opportunity-log {
@@ -114,6 +115,12 @@ h2 {
 
 .risk-entry.opportunity {
     background-color: var(--color-opportunity-light);
+}
+
+@media (max-width: 768px) {
+    .risk-log {
+        height: unset;
+    }
 }
 
 </style>
