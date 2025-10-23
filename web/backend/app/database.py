@@ -61,7 +61,7 @@ class ProjectRepository:
                     )
                     project_id = await cursor.fetchone()
                     if project_id:
-                        return ProjectInDB(id=project_id[0], name=project.name, description=project.description)
+                        return ProjectInDB(id=project_id[0], name=project.name, description=project.description, current_step=0)
                     return None
         except psycopg.IntegrityError:
             return None
@@ -69,19 +69,19 @@ class ProjectRepository:
     async def get_project_by_id(self, project_id: int, user_id: int) -> Optional[ProjectInDB]:
         async with self.conn.cursor() as cursor:
             await cursor.execute(
-                "SELECT name, description FROM projects WHERE id = %s AND user_id = %s",
+                "SELECT name, description, current_step FROM projects WHERE id = %s AND user_id = %s",
                 (project_id, user_id)
             )
             row = await cursor.fetchone()
             if row:
-                return ProjectInDB(id=project_id, name=row[0], description=row[1])
+                return ProjectInDB(id=project_id, name=row[0], description=row[1], current_step=row[2])
             return None
         
     async def get_projects_by_user_id(self, user_id: int) -> list[ProjectInDB]:
         async with self.conn.cursor() as cursor:
             await cursor.execute(
-                "SELECT id, name, description FROM projects WHERE user_id = %s",
+                "SELECT id, name, description, current_step FROM projects WHERE user_id = %s",
                 (user_id,)
             )
             rows = await cursor.fetchall()
-            return [ProjectInDB(id=row[0], name=row[1], description=row[2]) for row in rows]
+            return [ProjectInDB(id=row[0], name=row[1], description=row[2], current_step=row[3]) for row in rows]

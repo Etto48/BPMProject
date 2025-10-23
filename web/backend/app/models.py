@@ -20,6 +20,7 @@ class Project(BaseModel):
 
 class ProjectInDB(Project):
     id: int
+    current_step: int
 
 class Risk(BaseModel):
     type: Literal['threat', 'opportunity'] = Field(

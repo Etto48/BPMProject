@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS projects (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(150) NOT NULL,
-    description TEXT
+    description TEXT,
+    current_step NUMERIC DEFAULT 0
 );
 
 -- Risks table
