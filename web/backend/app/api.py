@@ -1,10 +1,11 @@
+from typing import Optional
 import fastapi
 import logging
 from fastapi import HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 from database import UserRepository, ProjectRepository
 from auth import hash_password, verify_password
-from models import ProjectData, UserData, UserResponse, UserInDB
+from models import Project, ProjectInDB, Risk, UserData, UserResponse, UserInDB
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ async def get_current_user(request: Request, db: UserRepository = Depends(get_us
         # User no longer exists, clear session
         request.session.clear()
         raise HTTPException(
-            status_code=401,
+            status_code=404,
             detail="User not found"
         )
     
@@ -69,7 +70,7 @@ async def login(
     request: Request,
     user_data: UserData,
     db: UserRepository = Depends(get_user_repository)
-):
+) -> JSONResponse:
     """Login user and create session"""
     logger.info(f"Login attempt for user: {user_data.username}")
     logger.info(f"Request headers: {dict(request.headers)}")
@@ -101,8 +102,8 @@ async def login(
     logger.info(f"User {user_data.username} logged in successfully")
     logger.info(f"Session data set: user_id={user_id}, username={stored_username}")
     logger.info(f"Session after setting: {dict(request.session)}")
-    
-    return {"message": "Logged in"}
+
+    return JSONResponse({"message": "Logged in"})
 
 
 @api.get("/me", response_model=UserResponse)
@@ -126,7 +127,7 @@ def logout(request: Request) -> JSONResponse:
 @api.post("/projects")
 async def create_project(
     request: Request,
-    project_data: ProjectData,
+    project_data: Project,
     db: ProjectRepository = Depends(get_project_repository),
 ) -> dict:
     if "user_id" not in request.session:
@@ -139,12 +140,12 @@ async def create_project(
     await db.create_project(project_data, user_id)
     return {"message": "Project created"}
 
-@api.get("/projects/")
+@api.get("/projects/{project_id}")
 async def get_project(
     request: Request,
     project_id: int,
     db: ProjectRepository = Depends(get_project_repository),
-) -> ProjectData:
+) -> ProjectInDB:
     if "user_id" not in request.session:
         raise HTTPException(
             status_code=401,
@@ -164,7 +165,7 @@ async def get_project(
 async def list_projects(
     request: Request,
     db: ProjectRepository = Depends(get_project_repository),
-) -> list[ProjectData]:
+) -> list[ProjectInDB]:
     if "user_id" not in request.session:
         raise HTTPException(
             status_code=401,
@@ -174,3 +175,20 @@ async def list_projects(
 
     projects = await db.get_projects_by_user_id(user_id)
     return projects
+
+@api.get("/projects/{project_id}/risks")
+async def get_project_risks(
+    request: Request,
+    project_id: int,
+) -> Optional[list[Risk]]:
+    if "user_id" not in request.session:
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    user_id = request.session["user_id"]
+
+    risks = None
+    # Here you would normally ask the LLM for risks based on the project details.
+
+    return risks

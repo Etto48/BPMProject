@@ -1,6 +1,6 @@
 import psycopg
 from typing import Optional
-from models import UserResponse, UserInDB, ProjectData
+from models import ProjectInDB, UserResponse, UserInDB, Project
 
 class UserRepository:
     def __init__(self, connection: psycopg.AsyncConnection):
@@ -51,7 +51,7 @@ class ProjectRepository:
     def __init__(self, connection: psycopg.AsyncConnection):
         self.conn = connection
 
-    async def create_project(self, project: ProjectData, user_id: int) -> None:
+    async def create_project(self, project: Project, user_id: int) -> None:
         async with self.conn.transaction():
             async with self.conn.cursor() as cursor:
                 await cursor.execute(
@@ -59,7 +59,7 @@ class ProjectRepository:
                     (project.name, project.description, user_id)
                 )
 
-    async def get_project_by_id(self, project_id: int, user_id: int) -> Optional[ProjectData]:
+    async def get_project_by_id(self, project_id: int, user_id: int) -> Optional[ProjectInDB]:
         async with self.conn.cursor() as cursor:
             await cursor.execute(
                 "SELECT name, description FROM projects WHERE id = %s AND user_id = %s",
@@ -67,14 +67,14 @@ class ProjectRepository:
             )
             row = await cursor.fetchone()
             if row:
-                return ProjectData(name=row[0], description=row[1])
+                return ProjectInDB(id=project_id, name=row[0], description=row[1])
             return None
         
-    async def get_projects_by_user_id(self, user_id: int) -> list[ProjectData]:
+    async def get_projects_by_user_id(self, user_id: int) -> list[ProjectInDB]:
         async with self.conn.cursor() as cursor:
             await cursor.execute(
-                "SELECT name, description FROM projects WHERE user_id = %s",
+                "SELECT id, name, description FROM projects WHERE user_id = %s",
                 (user_id,)
             )
             rows = await cursor.fetchall()
-            return [ProjectData(name=row[0], description=row[1]) for row in rows]
+            return [ProjectInDB(id=row[0], name=row[1], description=row[2]) for row in rows]
