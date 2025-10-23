@@ -19,6 +19,8 @@ CREATE TYPE risk_type AS ENUM ('threat', 'opportunity');
 CREATE TABLE IF NOT EXISTS risks (
     id SERIAL PRIMARY KEY,
     project_id INT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
     type risk_type NOT NULL,
     probability NUMERIC,
     impact NUMERIC,
