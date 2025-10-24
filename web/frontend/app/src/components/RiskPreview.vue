@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { RiskKind, type RiskSuggestion } from '@/types';
+import { Sparkles } from 'lucide-vue-next';
 
 const props = defineProps<{
     index: number
     suggestions: Array<RiskSuggestion>
+    isLoading?: boolean
 }>();
 
 const currentRisk = computed(() => {
@@ -24,7 +26,25 @@ defineEmits<{
 </script>
 
 <template>
-    <div class="card risk-preview" :class="currentRisk.kind === RiskKind.Opportunity ? 'opportunity-border' : 'threat-border'">
+    <svg width="0" height="0" style="position: absolute;">
+        <defs>
+            <linearGradient id="sparkle-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color: var(--color-accent-1); stop-opacity: 1" />
+                <stop offset="100%" style="stop-color: var(--color-accent-2); stop-opacity: 1" />
+            </linearGradient>
+        </defs>
+    </svg>
+    <div class="card risk-preview" :class="isLoading ? 'gradient-border' : (currentRisk.kind === RiskKind.Opportunity ? 'opportunity-border' : 'threat-border')">
+        <!-- Loading Overlay -->
+        <Transition name="fade">
+            <div v-if="isLoading" class="loading-overlay">
+                <div class="loading-content">
+                    <Sparkles class="sparkle-icon" :size="48" />
+                    <p class="loading-text">Generating risk suggestions...</p>
+                </div>
+            </div>
+        </Transition>
+
         <div class="tab-selector">
             <button 
                 :class="{ active: currentRisk.kind === RiskKind.Opportunity }"
@@ -63,12 +83,70 @@ defineEmits<{
 <style scoped>
 .risk-preview {
     flex: 1;
-    min-width: 300px;
+    min-height: 0;
     padding: 2rem;
     transition: border-color 0.3s ease;
     display: flex;
     flex-direction: column;
     justify-content: stretch;
+    margin: 0;
+    position: relative;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color-background-mute);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: inherit;
+}
+
+.loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.sparkle-icon {
+    fill: url(#sparkle-gradient);
+    stroke: url(#sparkle-gradient);
+    animation: sparkle-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes sparkle-pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.7;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}
+
+.loading-text {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
 }
 
 .button-wrapper {
@@ -90,6 +168,13 @@ defineEmits<{
 /* Opportunity Border */
 .opportunity-border {
     border: 4px solid var(--color-opportunity);
+}
+
+/* Gradient Border */
+.gradient-border {
+    border: 4px solid transparent;
+    background: linear-gradient(var(--color-background), var(--color-background)) padding-box,
+                linear-gradient(135deg, var(--color-accent-1), var(--color-accent-2)) border-box;
 }
 
 .tab-selector {
@@ -133,10 +218,15 @@ defineEmits<{
 .input-group {
     margin-bottom: 1.5rem;
     transition: all 0.3s ease;
+    flex-shrink: 0;
 }
 
 .input-group:has(textarea) {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    margin-bottom: 0;
 }
 
 .input-group label {
@@ -145,13 +235,20 @@ defineEmits<{
     font-weight: 500;
     font-size: 0.95rem;
     color: var(--color-text);
+    flex-shrink: 0;
 }
 
 .input-wrapper {
     position: relative;
     border-radius: 8px;
     transition: all 0.3s ease;
-    height: calc(100% - 2rem);
+}
+
+.input-wrapper:has(textarea) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 /* Threat Input Border */
@@ -228,10 +325,10 @@ defineEmits<{
 
 .textarea-input {
     resize: none;
-    min-height: 120px;
-    height: 100%;
+    flex: 1;
     font-family: inherit;
     line-height: 1.5;
+    min-height: 0;
 }
 
 /* Mobile responsiveness */

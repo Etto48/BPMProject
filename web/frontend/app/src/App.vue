@@ -41,7 +41,7 @@ header {
   background-color: var(--color-background);
   box-shadow: 0 10px 10px var(--shadow-color);
   padding: 1rem;
-  margin-bottom: 3rem;
+  margin-bottom: 0;
 }
 
 .nav-title-container {

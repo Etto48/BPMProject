@@ -5,7 +5,7 @@ from fastapi import HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 from database import UserRepository, ProjectRepository
 from auth import hash_password, verify_password
-from models import Project, ProjectInDB, Risk, RiskInDB, ScoredRisk, TrackedManagedRisk, TrackedScoredRisk, UserData, UserResponse, UserInDB
+from models import Project, ProjectInDB, Risk, RiskInDB, TrackedRisk, TrackedScoredRisk, TrackedManagedRisk, UserData, UserResponse, UserInDB
 
 from llm import LLM # type: ignore
 
@@ -289,34 +289,9 @@ async def generate_risk_scores(
             detail="No risks found for the project"
         )
     
-    # TODO: Call LLM to generate risk scores (impact and probability)
+    risks = list(map(lambda r: TrackedRisk(**r.model_dump()), risks))
 
-    scored_risks = [
-        TrackedScoredRisk(
-            id=1,
-            kind='threat',
-            title='Supplier bankruptcy risk',
-            description='Our main component supplier is facing financial difficulties due to market downturn. If they go bankrupt, we would need to find alternative suppliers, causing delays of 2-3 months in the production schedule and requiring re-certification of new components.',
-            impact=8,
-            probability=4
-        ),
-        TrackedScoredRisk(
-            id=2,
-            kind='opportunity',
-            title='Early framework release',
-            description='The UI framework we depend on is ahead of schedule and may release version 2.0 earlier than expected. This would allow us to leverage improved performance features and reduce our custom workaround code by approximately 30%.',
-            impact=6,
-            probability=7
-        ),
-        TrackedScoredRisk(
-            id=3,
-            kind='threat',
-            title='Key developer resignation',
-            description='Our lead backend developer has been approached by competitors and may leave the company. This developer holds critical knowledge about our legacy authentication system and their departure would significantly slow down the planned security upgrade.',
-            impact=9,
-            probability=5
-        )
-    ]
+    scored_risks = await llm.generate_risk_scores(project, risks)
 
     return scored_risks
 

@@ -44,8 +44,8 @@
 
   --color-threat: #e34f3b;
   --color-threat-light: #e34f3b30;
-  --color-opportunity: #19df7f;
-  --color-opportunity-light: #19df7f30;
+  --color-opportunity: #40a172;
+  --color-opportunity-light: #40a17230;
   
   --color-threat-hover: #a84235;
   --color-threat-hover-light: #a8423530;
@@ -90,7 +90,7 @@
 }
 
 body {
-  min-height: 100vh;
+  height: 100vh;
   color: var(--color-text);
   background: var(--color-background);
   transition:
@@ -114,4 +114,10 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@media (max-width: 768px) {
+  body {
+    height: unset;
+  }
 }

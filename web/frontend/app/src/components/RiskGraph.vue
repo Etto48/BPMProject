@@ -84,7 +84,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { RiskPoint } from '../composables/useRiskCalculations'
+import type { TrackedScoredRisk } from '@/types'
 import { 
     getX, 
     getXInverted, 
@@ -104,7 +104,7 @@ interface DragState {
 
 const props = defineProps<{
     type: 'threats' | 'opportunities'
-    points: RiskPoint[]
+    points: TrackedScoredRisk[]
     riskThreshold: number
     draggedPoint: DragState | null
 }>()
@@ -113,7 +113,7 @@ const emit = defineEmits<{
     (e: 'mouseDown', index: number): void
     (e: 'mouseMove', impact: number, probability: number): void
     (e: 'mouseUp'): void
-    (e: 'showTooltip', event: MouseEvent, point: RiskPoint, pointId: string): void
+    (e: 'showTooltip', event: MouseEvent, point: TrackedScoredRisk, pointId: string): void
     (e: 'hideTooltip'): void
 }>()
 
@@ -127,7 +127,7 @@ const hyperbolaFillPath = computed(() =>
     generateHyperbolaFill(props.riskThreshold, isInverted.value)
 )
 
-const getPointX = (point: RiskPoint, index: number): number => {
+const getPointX = (point: TrackedScoredRisk, index: number): number => {
     if (props.draggedPoint && props.draggedPoint.index === index) {
         return isInverted.value 
             ? getXInverted(props.draggedPoint.tempImpact) 
@@ -136,7 +136,7 @@ const getPointX = (point: RiskPoint, index: number): number => {
     return isInverted.value ? getXInverted(point.impact) : getX(point.impact)
 }
 
-const getPointY = (point: RiskPoint, index: number): number => {
+const getPointY = (point: TrackedScoredRisk, index: number): number => {
     if (props.draggedPoint && props.draggedPoint.index === index) {
         return getY(props.draggedPoint.tempProbability)
     }
@@ -171,7 +171,7 @@ const handleMouseUp = () => {
     emit('mouseUp')
 }
 
-const handleMouseEnter = (event: MouseEvent, point: RiskPoint, index: number) => {
+const handleMouseEnter = (event: MouseEvent, point: TrackedScoredRisk, index: number) => {
     emit('showTooltip', event, point, `${props.type.slice(0, 3)}-${index}`)
 }
 </script>
@@ -204,7 +204,6 @@ const handleMouseEnter = (event: MouseEvent, point: RiskPoint, index: number) =>
 .risk-graph {
     width: 100%;
     height: 100%;
-    max-height: 100%;
     border-radius: 8px;
     cursor: default;
     object-fit: contain;
@@ -294,7 +293,7 @@ const handleMouseEnter = (event: MouseEvent, point: RiskPoint, index: number) =>
     stroke: none;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
     .graph-wrapper {
         min-width: unset;
         max-width: unset;

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, Field, RootModel, create_model
 from typing import Optional, Literal
 
 class UserResponse(BaseModel):
@@ -39,18 +39,25 @@ class Risk(BaseModel):
 class Risks(RootModel):
     root: list[Risk]
 
-class ScoredRisk(Risk):
-    impact: int = Field(
-        description="Numerical risk score between 1 and 10 indicating the impact of the risk"
-    )
-    probability: int = Field(
-        description="Numerical probability score between 1 and 10 indicating the likelihood of the risk occurring"
-    )
-
-class TrackedScoredRisk(ScoredRisk):
+class TrackedRisk(Risk):
     id: int
 
-class ManagedRisk(ScoredRisk):
+class ImpactAndProbability(BaseModel):
+    impact: int = Field(
+        description="Numerical risk score proportional to the monetary impact of the risk",
+        ge=1,
+        le=10
+    )
+    probability: int = Field(
+        description="Numerical probability score proportional to the likelihood of the risk occurring",
+        ge=1,
+        le=10
+    )
+
+class TrackedScoredRisk(TrackedRisk, ImpactAndProbability):
+    ...
+
+class TrackedManagedRisk(TrackedScoredRisk):
     contingency: Optional[str] = Field(
         default=None,
         description="Contingency plan describing preventive actions to avoid the risk from occurring"
@@ -59,9 +66,6 @@ class ManagedRisk(ScoredRisk):
         default=None,
         description="Fallback plan describing actions to minimize damage if the risk occurs"
     )
-
-class TrackedManagedRisk(ManagedRisk):
-    id: int
 
 class RiskInDB(BaseModel):
     id: int
@@ -73,3 +77,13 @@ class RiskInDB(BaseModel):
     probability: Optional[int]
     contingency: Optional[str]
     fallback: Optional[str]
+
+def generate_risk_score_model(risks: list[TrackedRisk]):    
+    fields = {
+        f"risk_{risk.id}": (ImpactAndProbability, 
+            Field(..., description=f"Risk impact and probability for risk with ID {risk.id} ({risk.title})")) for risk in risks
+    }
+    return create_model(
+        "RiskScores",
+        **fields
+    )

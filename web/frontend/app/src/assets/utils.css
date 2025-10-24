@@ -248,7 +248,7 @@
 }
 
 .capsule {
-    border-radius: 9999px;
+    border-radius: 1rem;
 }
 
 .flex-column {
