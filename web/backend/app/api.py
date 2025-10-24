@@ -376,6 +376,9 @@ async def generate_risk_plans(
             status_code=404,
             detail="No risks found for the project"
         )
+
+    # Filter the risks to only those that have impact*probability > project.risk_score_threshold*100
+    significant_risks = [risk for risk in risks if risk.impact is not None and risk.probability is not None and (risk.impact * risk.probability) > (project.riskScoreThreshold * 100)]
     
     # TODO: Call LLM to generate risk plans
 
