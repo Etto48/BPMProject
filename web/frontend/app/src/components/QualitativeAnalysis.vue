@@ -37,6 +37,12 @@ const tooltips = ref<Array<{
 
 const hoveredPoints = ref<Set<string>>(new Set())
 
+const handleContinue = () => {
+    // TODO: Navigate to contingency and fallback planning when implemented
+    // router.push(`/project/${projectId}/contingency-planning`)
+    alert('Contingency and fallback planning is not yet implemented. Coming soon!')
+}
+
 // Opportunity handlers
 const handleOpportunityMouseDown = (index: number) => {
     const point = opportunities.value[index]
@@ -232,6 +238,14 @@ fetchRiskScores()
                     <!-- Risk Threshold Slider -->
                     <RiskThresholdSlider v-model="riskThreshold" />
                 </div>
+                
+                <!-- Continue Section -->
+                <div class="continue-section">
+                    <p class="completion-message">Complete your risk assessment and move to the next phase.</p>
+                    <button class="gradient-button large-button" @click="handleContinue">
+                        Continue to Planning
+                    </button>
+                </div>
             </div>
         </div>
         
@@ -253,11 +267,15 @@ fetchRiskScores()
     gap: 2rem;
     padding: 0;
     width: 100%;
-    flex: 1;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
     background-color: var(--color-background);
     color: var(--color-text);
     transition: background-color 0.5s, color 0.5s;
     align-items: stretch;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .section-title {
@@ -271,24 +289,24 @@ fetchRiskScores()
 .border-wrapper {
     flex: 1;
     min-width: 0;
-    height: fit-content;
-    align-self: center;
-    padding: 0;
-    padding-right: 2rem;
+    padding: 1rem 2rem 1rem 0;
+    align-self: stretch;
+    box-sizing: border-box;
 }
 
 .content-wrapper-wrapper {
     display: flex;
     flex-direction: column;
-    max-height: 100%;
     height: 100%;
+    overflow: hidden;
 }
 
 .content-wrapper {
     display: flex;
     gap: 1rem;
     overflow: hidden;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
 }
 
 .graphs-container {
@@ -297,26 +315,68 @@ fetchRiskScores()
     justify-content: center;
     align-items: center;
     flex: 1;
-    overflow: auto;
+    overflow: hidden;
     align-self: stretch;
+    min-height: 0;
+}
+
+.continue-section {
+    padding: 1.5rem;
+    margin-top: 1rem;
+    background: var(--color-background-soft);
+    border-radius: 12px;
+    border: 2px solid var(--color-border);
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.completion-message {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.large-button {
+    padding: 0.875rem 2rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    width: 100%;
+    max-width: 300px;
 }
 
 @media (max-width: 1024px) {
-    .qualitative-analysis {
+    .content-wrapper {
         flex-direction: column;
-        height: fit-content;
+    }
+}
+
+@media (max-width: 768px) {
+    .qualitative-analysis {
+        flex-direction: column-reverse;
+        height: auto;
+        max-height: none;
+        gap: 1rem;
+        overflow-y: auto;
     }
 
     .border-wrapper {
         padding: 1rem;
+        padding-right: 1rem;
     }
-    
+
+    .content-wrapper-wrapper {
+        height: auto;
+        overflow: visible;
+    }
+
     .content-wrapper {
-        flex-direction: column;
+        overflow: visible;
     }
     
     .graphs-container {
         flex-direction: column;
+        overflow: visible;
     }
 }
 </style>
