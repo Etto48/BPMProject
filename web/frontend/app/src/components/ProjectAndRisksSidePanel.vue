@@ -3,14 +3,20 @@ import { ref } from 'vue'
 import { ChevronDown } from 'lucide-vue-next'
 import ExpandableProjectCard from './ExpandableProjectCard.vue'
 import type { DisplayableRisk } from '@/types'
+import { useRoute, useRouter } from 'vue-router'
+import { X } from 'lucide-vue-next'
 
 interface Props {
-    projectTitle: string
-    projectDescription: string
     threats: Array<DisplayableRisk>
     opportunities: Array<DisplayableRisk>
     allowRemove?: boolean
 }
+
+const route = useRoute()
+const projectId = Number(route.params.id)
+const router = useRouter()
+const projectTitle = ref('')
+const projectDescription = ref('')
 
 withDefaults(defineProps<Props>(), {
     allowRemove: false
@@ -23,6 +29,26 @@ const emit = defineEmits<{
 const showOpportunities = ref(true)
 const showThreats = ref(true)
 
+function fetchProject() {
+    fetch(`/api/projects/${projectId}`, {
+        method: 'GET',
+        credentials: 'include',
+    }).then(async (response) => {
+        if (response.ok) {
+            const projectData = await response.json();
+            projectTitle.value = projectData.title;
+            projectDescription.value = projectData.description;
+        } else {
+            console.error('Failed to fetch project data:', await response.text());
+            router.push('/oops');
+        }
+    }).catch((error) => {
+        console.error('Error fetching project data:', error);
+        router.push('/oops');
+    });
+}
+
+fetchProject();
 </script>
 
 <template>
@@ -38,9 +64,7 @@ const showThreats = ref(true)
                 <div v-if="showOpportunities" class="risk-list-container">
                     <div v-for="(opportunity, i) in opportunities" :key="i" class="risk-entry opportunity capsule" @click.stop>
                         <h3 class="risk-title">{{ opportunity.title }}</h3>
-                        <button v-if="allowRemove" class="remove-button" @click="emit('removeRisk', 'opportunity', i)" title="Remove risk">
-                            ×
-                        </button>
+                        <X v-if="allowRemove" class="remove-button" @click="emit('removeRisk', 'opportunity', i)" title="Remove risk" role="button" />
                     </div>
                 </div>
             </Transition>
@@ -54,9 +78,7 @@ const showThreats = ref(true)
                 <div v-if="showThreats" class="risk-list-container">
                     <div v-for="(threat, i) in threats" :key="i" class="risk-entry threat capsule" @click.stop>
                         <h3 class="risk-title">{{ threat.title }}</h3>
-                        <button v-if="allowRemove" class="remove-button" @click="emit('removeRisk', 'threat', i)" title="Remove risk">
-                            ×
-                        </button>
+                        <X v-if="allowRemove" class="remove-button" @click="emit('removeRisk', 'threat', i)" title="Remove risk" role="button" />
                     </div>
                 </div>
             </Transition>

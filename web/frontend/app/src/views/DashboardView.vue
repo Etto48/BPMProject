@@ -60,6 +60,20 @@ fetchProjects();
 <style scoped>
     main {
         margin-top: 2rem;
+        width: 100%;
+        padding-left: 80px;
+        padding-right: 80px;
+        box-sizing: border-box;
+        margin-bottom: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    main h2 {
+        font-size: 32px;
+        margin-bottom: 1rem;
+        display: inline-block;
     }
 
     .project-list {
@@ -103,6 +117,10 @@ fetchProjects();
     @media (max-width: 768px) {
         main {
             margin-top: 0;
+            width: 100%;
+            padding-left: 16px;
+            padding-right: 16px;
+            box-sizing: border-box;
         }
 
         .project-list {

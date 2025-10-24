@@ -14,8 +14,6 @@ const suggestedRisks = ref<Array<RiskSuggestion>>([]);
 const currentSuggestionIndex = ref(0);
 const acceptedThreats = ref<Array<RiskSuggestion>>([]);
 const acceptedOpportunities = ref<Array<RiskSuggestion>>([]);
-const projectTitle = ref('');
-const projectDescription = ref('');
 const isLoadingRisks = ref(true);
 
 const allRisksProcessed = computed(() => {
@@ -62,26 +60,6 @@ function remove_risk(kind: 'threat' | 'opportunity', index: number) {
     }
 }
 
-function fetchProject() {
-    fetch(`/api/projects/${projectId}`, {
-        method: 'GET',
-        credentials: 'include',
-    }).then(async (response) => {
-        if (response.ok) {
-            const data = await response.json();
-            console.log('Fetched project data:', data);
-            projectTitle.value = data.title || 'Untitled Project';
-            projectDescription.value = data.description || 'No description available';
-        } else {
-            console.log('Failed to fetch project data:', await response.text());
-            router.push('/oops');
-        }
-    }).catch((error) => {
-        console.error('Error fetching project data:', error);
-        router.push('/oops');
-    })
-}
-
 function fetchSuggestedRisks() {
     isLoadingRisks.value = true;
     fetch(`/api/projects/${projectId}/gen/risks`, {
@@ -115,7 +93,7 @@ function fetchSuggestedRisks() {
     })
 }
 
-function uploadRisks() {
+function handleContinue() {
     const risksToUpload: Array<Risk> = [
         ...acceptedThreats.value.map((risk) => ({
             kind: RiskKind.Threat,
@@ -149,15 +127,12 @@ function uploadRisks() {
     })
 }
 
-fetchProject();
 fetchSuggestedRisks();
 </script>
 
 <template>
-    <div class="risk-discovery-container">
+    <main>
         <ProjectAndRisksSidePanel 
-            :project-title="projectTitle"
-            :project-description="projectDescription"
             :threats="acceptedThreats"
             :opportunities="acceptedOpportunities"
             :allow-remove="true"
@@ -170,14 +145,14 @@ fetchSuggestedRisks();
                 <Transition name="fade-slide">
                     <div v-if="allRisksProcessed" class="continue-section">
                         <p class="completion-message">All risks processed! Ready to continue to qualitative analysis.</p>
-                        <button class="gradient-button large-button" @click="uploadRisks">
+                        <button class="gradient-button large-button" @click="handleContinue">
                             Continue to Analysis
                         </button>
                     </div>
                 </Transition>
             </div>
         </div>
-    </div>
+    </main>
 </template>
 
 <style scoped>
@@ -210,7 +185,7 @@ fetchSuggestedRisks();
     flex-shrink: 0;
 }
 
-.risk-discovery-container {
+main {
     display: flex;
     width: 100%;
     padding: 0;
@@ -219,14 +194,6 @@ fetchSuggestedRisks();
     justify-content: center;
     flex: 1;
     overflow: hidden;
-}
-
-@media (max-width: 768px) {
-    .risk-discovery-container {
-        flex-direction: column-reverse;
-        align-items: stretch;
-        height: auto;
-    }
 }
 
 .continue-section {
@@ -277,9 +244,12 @@ fetchSuggestedRisks();
     .preview-container {
         max-width: 100%;
     }
-    
-    .risk-discovery-container {
+
+    main {
         gap: 0;
+        flex-direction: column-reverse;
+        align-items: stretch;
+        height: auto;
     }
 }
 

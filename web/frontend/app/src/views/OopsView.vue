@@ -4,9 +4,9 @@ import '@/assets/error.css';
 </script>
 
 <template>
-    <div class="error-container">
+    <main class="error-container">
         <h1 class="gradient-text">Oops</h1>
         <h2>Something went wrong</h2>
         <p>Please try again later.</p>
-    </div>
+    </main>
 </template>

@@ -40,17 +40,30 @@ export type ProjectInDB = Project & {
 }
 
 export type TrackedScoredRisk = Risk & {
-    id: number
-    impact: number // 1-10
-    probability: number // 1-10
+  id: number
+  impact: number // 1-10
+  probability: number // 1-10
 }
+
+export type QualitativeAnalysisData = {
+  riskScoreThreshold: number
+  risks: Array<TrackedScoredRisk>
+}
+
+export type TrackedManagedRisk = TrackedScoredRisk & {
+  contingency: string,
+  fallback: string
+} 
 
 /**
  * A unified type for displaying risks in side panels
- * Works with both RiskSuggestion (from risk discovery) and TrackedScoredRisk (from qualitative analysis)
  */
 export type DisplayableRisk = {
   title: string
   kind: RiskKind
   description: string
+  impact?: number
+  probability?: number
+  contingency?: string
+  fallback?: string
 }

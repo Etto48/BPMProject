@@ -4,8 +4,9 @@ import RiskGraph from '@/components/RiskGraph.vue'
 import RiskThresholdSlider from '@/components/RiskThresholdSlider.vue'
 import RiskTooltip from '@/components/RiskTooltip.vue'
 import ProjectAndRisksSidePanel from '@/components/ProjectAndRisksSidePanel.vue'
-import type { TrackedScoredRisk } from '@/types'
+import type { TrackedScoredRisk, QualitativeAnalysisData } from '@/types'
 import { useRoute, useRouter } from 'vue-router'
+import { Sparkles } from 'lucide-vue-next'
 
 interface DragState {
     index: number
@@ -22,8 +23,7 @@ const riskThreshold = ref(0.1)
 
 const threats = ref<Array<TrackedScoredRisk>>([])
 const opportunities = ref<Array<TrackedScoredRisk>>([])
-const projectTitle = ref('')
-const projectDescription = ref('')
+const isLoadingRisks = ref(true)
 
 const draggedThreatPoint = ref<DragState | null>(null)
 const draggedOpportunityPoint = ref<DragState | null>(null)
@@ -37,10 +37,29 @@ const tooltips = ref<Array<{
 
 const hoveredPoints = ref<Set<string>>(new Set())
 
-const handleContinue = () => {
-    // TODO: Navigate to contingency and fallback planning when implemented
-    // router.push(`/project/${projectId}/contingency-planning`)
-    alert('Contingency and fallback planning is not yet implemented. Coming soon!')
+function handleContinue() {
+    const data: QualitativeAnalysisData = {
+        riskScoreThreshold: riskThreshold.value,
+        risks: [...threats.value, ...opportunities.value]
+    }
+    fetch(`/api/projects/${projectId}/risks/scores`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    }).then(async (response) => {
+        if (response.ok) {
+            router.push(`/project/${projectId}/planning`)
+        } else {
+            console.error('Failed to save qualitative analysis data:', await response.text())
+            router.push('/oops')
+        }
+    }).catch((error) => {
+        console.error('Error saving qualitative analysis data:', error)
+        router.push('/oops')
+    })
 }
 
 // Opportunity handlers
@@ -150,26 +169,8 @@ const hideTooltip = () => {
     hoveredPoints.value.clear()
 }
 
-function fetchProject() {
-    fetch(`/api/projects/${projectId}`, {
-        method: 'GET',
-        credentials: 'include',
-    }).then(async (response) => {
-        if (response.ok) {
-            const data = await response.json()
-            projectTitle.value = data.title || 'Untitled Project'
-            projectDescription.value = data.description || 'No description available'
-        } else {
-            console.error('Failed to fetch project:', await response.text())
-            router.push('/oops')
-        }
-    }).catch((error) => {
-        console.error('Error fetching project:', error)
-        router.push('/oops')
-    })
-}
-
 function fetchRiskScores() {
+    isLoadingRisks.value = true
     fetch(`/api/projects/${projectId}/gen/risks/scores`, {
         method: 'GET',
         credentials: 'include',
@@ -185,28 +186,46 @@ function fetchRiskScores() {
     }).catch((error) => {
         console.error('Error fetching risk scores:', error)
         router.push('/oops')
+    }).finally(() => {
+        isLoadingRisks.value = false
     })
 }
 
-fetchProject()
 fetchRiskScores()
 </script>
 
 <template>
-    <div class="qualitative-analysis">
+    <svg width="0" height="0" style="position: absolute;">
+        <defs>
+            <linearGradient id="sparkle-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color: var(--color-accent-1); stop-opacity: 1" />
+                <stop offset="100%" style="stop-color: var(--color-accent-2); stop-opacity: 1" />
+            </linearGradient>
+        </defs>
+    </svg>
+    <main>
         <!-- Side Panel -->
         <ProjectAndRisksSidePanel 
-            :project-title="projectTitle"
-            :project-description="projectDescription"
             :threats="threats"
             :opportunities="opportunities"
         />
 
         <!-- Main Content -->
         <div class="border-wrapper">
-            <div class="content-wrapper-wrapper">
+            <div class="content-wrapper-wrapper" :class="{ loading: isLoadingRisks }">
                 <!-- <h2 class="section-title gradient-text gradient-border-bottom">Qualitative Analysis</h2> -->
-                <div class="content-wrapper">
+                
+                <!-- Loading Overlay -->
+                <Transition name="fade">
+                    <div v-if="isLoadingRisks" class="loading-overlay">
+                        <div class="loading-content">
+                            <Sparkles class="sparkle-icon" :size="64" />
+                            <p class="loading-text">Loading risk analysis...</p>
+                        </div>
+                    </div>
+                </Transition>
+                
+                <div class="content-wrapper" :style="{ visibility: isLoadingRisks ? 'hidden' : 'visible' }">
                     <div class="graphs-container">
                         <!-- Opportunities Graph -->
                         <RiskGraph
@@ -240,7 +259,7 @@ fetchRiskScores()
                 </div>
                 
                 <!-- Continue Section -->
-                <div class="continue-section">
+                <div class="continue-section" v-show="!isLoadingRisks">
                     <p class="completion-message">Complete your risk assessment and move to the next phase.</p>
                     <button class="gradient-button large-button" @click="handleContinue">
                         Continue to Planning
@@ -258,11 +277,11 @@ fetchRiskScores()
             :title="tooltip.title"
             :description="tooltip.description"
         />
-    </div>
+    </main>
 </template>
 
 <style scoped>
-.qualitative-analysis {
+main {
     display: flex;
     gap: 2rem;
     padding: 0;
@@ -292,6 +311,7 @@ fetchRiskScores()
     padding: 1rem 2rem 1rem 0;
     align-self: stretch;
     box-sizing: border-box;
+    position: relative;
 }
 
 .content-wrapper-wrapper {
@@ -299,6 +319,63 @@ fetchRiskScores()
     flex-direction: column;
     height: 100%;
     overflow: hidden;
+    position: relative;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color-background-mute);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    border-radius: 12px;
+}
+
+.loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.sparkle-icon {
+    fill: url(#sparkle-gradient);
+    stroke: url(#sparkle-gradient);
+    animation: sparkle-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes sparkle-pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.7;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}
+
+.loading-text {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
 }
 
 .content-wrapper {
@@ -352,7 +429,7 @@ fetchRiskScores()
 }
 
 @media (max-width: 768px) {
-    .qualitative-analysis {
+    main {
         flex-direction: column-reverse;
         height: auto;
         max-height: none;
@@ -370,6 +447,12 @@ fetchRiskScores()
         overflow: visible;
     }
 
+    .content-wrapper-wrapper.loading {
+        min-height: 80vh;
+        height: 80vh;
+        overflow: hidden;
+    }
+
     .content-wrapper {
         overflow: visible;
     }
@@ -377,6 +460,10 @@ fetchRiskScores()
     .graphs-container {
         flex-direction: column;
         overflow: visible;
+    }
+
+    .loading-overlay {
+        border-radius: 12px;
     }
 }
 </style>

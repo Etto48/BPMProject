@@ -32,7 +32,7 @@ function createProject() {
 </script>
 
 <template>
-    <div class="card gradient-border">
+    <main class="card gradient-border">
         <h2 class="gradient-text gradient-border-bottom">Create New Project</h2>
         <div class="input-group">
             <label for="project-title">Project Title</label>
@@ -47,11 +47,11 @@ function createProject() {
             </div>
         </div>
         <button class="gradient-button" @click="createProject">Create Project</button>
-    </div>
+    </main>
 </template>
 
 <style scoped>
-.card {
+main {
     max-width: 600px;
     width: 100%;
     margin: 2rem auto;
@@ -82,7 +82,7 @@ h2 {
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
-    .card {
+    main {
         margin: 1rem;
         padding: 1.5rem;
     }

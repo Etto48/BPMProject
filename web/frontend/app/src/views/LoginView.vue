@@ -112,7 +112,7 @@ function selectTab(tab: 'login' | 'register') {
         <img :src="logoSvg" alt="AIRA Logo" class="logo" />
         <h1 class="gradient-text">AIRA</h1>
     </div>
-    <div class="card gradient-border">
+    <main class="card gradient-border">
         <div class="tab-selector">
             <button 
                 :class="{ active: activeTab === 'login' }"
@@ -162,7 +162,7 @@ function selectTab(tab: 'login' | 'register') {
         </Transition>
         
         <button class="gradient-button" :disabled="isRegisterDisabled" @click="activeTab === 'login' ? login() : register()">{{ activeTab === 'login' ? 'Login' : 'Register' }}</button>
-    </div>
+    </main>
 </template>
 
 <style scoped>
@@ -255,7 +255,7 @@ h1 {
     margin: 0;
 }
 
-.card {
+main {
     position: absolute;
     top: 50%;
     right: 200px;
@@ -390,7 +390,7 @@ h1 {
     left: clamp(50px, 10vw, 200px);
 }
 
-.card {
+main {
     right: clamp(50px, 10vw, 200px);
 }
 
@@ -425,7 +425,7 @@ h1 {
         padding: 0 16px;
     }
 
-    .card {
+    main {
         left: calc(50% - 10px);
         top: 250px;
         transform: translate(-50%, 0);

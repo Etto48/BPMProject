@@ -1,4 +1,5 @@
 export const stepNames: Array<string> = [
     'risk-discovery',
-    'qualitative-analysis'
+    'qualitative-analysis',
+    'planning',
 ]
