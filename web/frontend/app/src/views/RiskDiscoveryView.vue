@@ -166,7 +166,7 @@ fetchSuggestedRisks();
         <div class="flex-column preview-wrapper">
             <div class="preview-container">
                 <RiskSuggestionProgress :index="currentSuggestionIndex" :suggestions="suggestedRisks" :isLoading="isLoadingRisks" />
-                <RiskPreview :index="currentSuggestionIndex" :suggestions="suggestedRisks" @accept="actionOnCurrent(true)" @reject="actionOnCurrent(false)"/>
+                <RiskPreview :index="currentSuggestionIndex" :suggestions="suggestedRisks" :isLoading="isLoadingRisks" @accept="actionOnCurrent(true)" @reject="actionOnCurrent(false)"/>
                 <Transition name="fade-slide">
                     <div v-if="allRisksProcessed" class="continue-section">
                         <p class="completion-message">All risks processed! Ready to continue to qualitative analysis.</p>
