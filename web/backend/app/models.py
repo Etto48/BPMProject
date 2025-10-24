@@ -57,6 +57,10 @@ class ImpactAndProbability(BaseModel):
 class TrackedScoredRisk(TrackedRisk, ImpactAndProbability):
     ...
 
+class QualitativeAnalysisData(BaseModel):
+    risks: list[TrackedScoredRisk]
+    riskScoreThreshold: float
+
 class TrackedManagedRisk(TrackedScoredRisk):
     contingency: Optional[str] = Field(
         default=None,

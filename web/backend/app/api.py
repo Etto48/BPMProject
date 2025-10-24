@@ -5,7 +5,7 @@ from fastapi import HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 from database import UserRepository, ProjectRepository
 from auth import hash_password, verify_password
-from models import Project, ProjectInDB, Risk, RiskInDB, TrackedRisk, TrackedScoredRisk, TrackedManagedRisk, UserData, UserResponse, UserInDB
+from models import Project, ProjectInDB, QualitativeAnalysisData, Risk, RiskInDB, TrackedRisk, TrackedScoredRisk, TrackedManagedRisk, UserData, UserResponse, UserInDB
 
 from llm import LLM # type: ignore
 
@@ -299,8 +299,7 @@ async def generate_risk_scores(
 async def add_risk_scores(
     request: Request,
     project_id: int,
-    scored_risks: list[TrackedScoredRisk],
-    riskScoreThreshold: float = 0.1,
+    qualitative_analysis_data: QualitativeAnalysisData,
     db: ProjectRepository = Depends(get_project_repository),
 ) -> dict:
     if "user_id" not in request.session:
@@ -316,6 +315,8 @@ async def add_risk_scores(
             status_code=404,
             detail="Project not found"
         )
+    scored_risks = qualitative_analysis_data.risks
+    riskScoreThreshold = qualitative_analysis_data.riskScoreThreshold
     updated_risks = await db.add_project_risks_scores(project_id, user_id, scored_risks, riskScoreThreshold)
     if not updated_risks:
         raise HTTPException(
