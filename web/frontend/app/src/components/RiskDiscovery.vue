@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { ref, toRaw } from 'vue';
-import ProgressNav from './ProgressNav.vue';
+import { ref, toRaw, computed } from 'vue';
 import RiskPreview from './RiskPreview.vue';
 import { RiskKind, type Risk, type RiskSuggestion } from '@/types';
 import RiskSuggestionProgress from './RiskSuggestionProgress.vue';
-import RiskDiscoveryLog from './RiskDiscoveryLog.vue';
+import ProjectAndRisksSidePanel from './ProjectAndRisksSidePanel.vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ChevronDown } from 'lucide-vue-next';
 
 const route = useRoute();
 const router = useRouter();
@@ -16,10 +14,17 @@ const suggestedRisks = ref<Array<RiskSuggestion>>([]);
 const currentSuggestionIndex = ref(0);
 const acceptedThreats = ref<Array<RiskSuggestion>>([]);
 const acceptedOpportunities = ref<Array<RiskSuggestion>>([]);
-const showDescription = ref(false);
 const projectTitle = ref('');
 const projectDescription = ref('');
 const isLoadingRisks = ref(true);
+
+const allRisksProcessed = computed(() => {
+    // Check if we're at the last (empty) risk and it hasn't been filled
+    const isAtEnd = currentSuggestionIndex.value === suggestedRisks.value.length - 1;
+    const lastRisk = suggestedRisks.value[currentSuggestionIndex.value];
+    const lastRiskEmpty = lastRisk && lastRisk.title === '' && lastRisk.description === '';
+    return isAtEnd && lastRiskEmpty && (acceptedThreats.value.length > 0 || acceptedOpportunities.value.length > 0);
+});
 
 function actionOnCurrent(accept: boolean) {
     let currentRisk = suggestedRisks.value[currentSuggestionIndex.value];
@@ -68,7 +73,7 @@ function fetchProject() {
             projectTitle.value = data.title || 'Untitled Project';
             projectDescription.value = data.description || 'No description available';
         } else {
-            console.log('Failed to fetch project data');
+            console.log('Failed to fetch project data:', await response.text());
             router.push('/oops');
         }
     }).catch((error) => {
@@ -99,7 +104,7 @@ function fetchSuggestedRisks() {
                 accepted: false,
             });
         } else {
-            console.error('Failed to fetch suggested risks');
+            console.error('Failed to fetch suggested risks:', await response.text());
             router.push('/oops');
         }
     }).catch((error) => {
@@ -129,13 +134,13 @@ function uploadRisks() {
             'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ risks: risksToUpload }),
+        body: JSON.stringify(risksToUpload),
     }).then(async (response) => {
         if (response.ok) {
             console.log('Successfully uploaded risks');
-            router.push(`/projects/${projectId}/qualitative-analysis`);
+            router.push(`/project/${projectId}/qualitative-analysis`);
         } else {
-            console.error('Failed to upload risks');
+            console.error('Failed to upload risks:', await response.text());
             router.push('/oops');
         }
     }).catch((error) => {
@@ -150,128 +155,135 @@ fetchSuggestedRisks();
 
 <template>
     <div class="risk-discovery-container">
-        <div class="flex-column log-wrapper">
-            <div class="card gradient-border hoverable project-info" @click="showDescription = !showDescription">
-                <h3 class="gradient-background capsule project-title" :class="{ 'open': showDescription }">
-                    <span>{{ projectTitle }}</span>
-                    <ChevronDown class="arrow" :class="{ 'open': showDescription }" :size="20" />
-                </h3>
-                <Transition name="description">
-                    <div v-if="showDescription" class="gradient-background-light project-description">
-                        <p>{{ projectDescription }}</p>
+        <ProjectAndRisksSidePanel 
+            :project-title="projectTitle"
+            :project-description="projectDescription"
+            :threats="acceptedThreats"
+            :opportunities="acceptedOpportunities"
+            :allow-remove="true"
+            @remove-risk="remove_risk"
+        />
+        <div class="flex-column preview-wrapper">
+            <div class="preview-container">
+                <RiskSuggestionProgress :index="currentSuggestionIndex" :suggestions="suggestedRisks" :isLoading="isLoadingRisks" />
+                <RiskPreview :index="currentSuggestionIndex" :suggestions="suggestedRisks" @accept="actionOnCurrent(true)" @reject="actionOnCurrent(false)"/>
+                <Transition name="fade-slide">
+                    <div v-if="allRisksProcessed" class="continue-section">
+                        <p class="completion-message">All risks processed! Ready to continue to qualitative analysis.</p>
+                        <button class="gradient-button large-button" @click="uploadRisks">
+                            Continue to Analysis
+                        </button>
                     </div>
                 </Transition>
             </div>
-            <RiskDiscoveryLog :threats="acceptedThreats" :opportunities="acceptedOpportunities" @remove-risk="remove_risk"/>
-        </div>
-        <div class="flex-column preview-wrapper">
-            <RiskSuggestionProgress :index="currentSuggestionIndex" :suggestions="suggestedRisks" :isLoading="isLoadingRisks" />
-            <RiskPreview :index="currentSuggestionIndex" :suggestions="suggestedRisks" @accept="actionOnCurrent(true)" @reject="actionOnCurrent(false)"/>
         </div>
     </div>
-    <ProgressNav :total="3" :completed="1" :previousEnabled="false" :nextEnabled="true" @navigate-next="uploadRisks"/>
 </template>
 
 <style scoped>
-.project-info {
-    cursor: pointer;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-
-.project-title {
+.preview-container {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 2px 1rem;
-    font-weight: 600;
-    color: #fff;
-    margin-bottom: 0;
-    transition: filter 0.3s ease, background-color 0.2s ease, margin-bottom 0.3s ease;
-}
-
-.project-title .arrow {
-    transition: transform 0.3s ease;
-    display: inline-flex;
-    flex-shrink: 0;
-}
-
-.project-title .arrow.open {
-    transform: rotate(180deg);
-}
-
-.project-title.open {
-    margin-bottom: 1rem;
-}
-
-.project-description {
-    border-radius: 8px;
-    padding: 1rem;
-    transition: filter 0.3s ease, background-color 0.2s ease;
-}
-
-.project-description p {
-    margin: 0;
-    display: block;
-    overflow-y: auto;
-    max-height: 100px;
-}
-
-.description-enter-active {
-    transition: all 0.3s ease;
-    overflow: hidden;
-}
-
-.description-leave-active {
-    transition: all 0.3s ease;
-    overflow: hidden;
-}
-
-.description-enter-from,
-.description-leave-to {
-    opacity: 0;
-    max-height: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    min-height: 0;
-    margin: 0;
-}
-
-.description-enter-to,
-.description-leave-from {
-    opacity: 1;
-    max-height: 200px;
+    flex-direction: column;
+    gap: 2rem;
+    align-self: center;
+    width: 100%;
+    max-width: 700px;
 }
 
 .preview-wrapper {
     flex: 1;
     min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-height: 0;
+    padding: 2rem;
+    padding-left: 0;
+    align-items: stretch;
+    justify-content: center;
 }
 
-.log-wrapper {
+.preview-wrapper > :first-child {
+    flex-shrink: 0;
+}
+
+.preview-wrapper > :nth-child(2) {
     flex: 1;
-    max-width: 400px;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .risk-discovery-container {
     display: flex;
     width: 100%;
-    max-width: 1200px;
-    padding: 0 2rem;
+    padding: 0;
     flex-direction: row;
     gap: 2rem;
     justify-content: center;
-    height: calc(100vh - 13rem);
+    flex: 1;
+    overflow: hidden;
 }
 
 @media (max-width: 768px) {
-    .log-wrapper {
-        max-width: unset;
-    }
-
     .risk-discovery-container {
         flex-direction: column-reverse;
         align-items: stretch;
         height: auto;
+    }
+}
+
+.continue-section {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background: var(--color-background-soft);
+    border-radius: 12px;
+    border: 2px solid var(--color-border);
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.completion-message {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.large-button {
+    padding: 0.875rem 2rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    width: 100%;
+    max-width: 300px;
+}
+
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+    transition: all 0.4s ease;
+}
+
+.fade-slide-enter-from {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.fade-slide-leave-to {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+@media (max-width: 768px) {
+    .preview-wrapper {
+        padding: 1rem;
+    }
+
+    .preview-container {
+        max-width: 100%;
+    }
+    
+    .risk-discovery-container {
+        gap: 0;
     }
 }
 

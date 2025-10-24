@@ -1,16 +1,4 @@
 /**
- * Composable for risk graph coordinate calculations and hyperbola generation
- */
-
-export interface RiskPoint {
-    id: string
-    title: string
-    description: string
-    impact: number // 1-10
-    probability: number // 1-10
-}
-
-/**
  * Convert data values (1-10) to SVG coordinates
  */
 export const getX = (impact: number): number => {

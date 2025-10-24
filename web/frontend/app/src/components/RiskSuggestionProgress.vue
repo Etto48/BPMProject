@@ -27,7 +27,6 @@ defineProps<{
     justify-content: center;
     flex-direction: row;
     gap: 0.5rem;
-    margin: 1rem;
 }
 .dot {
     width: 16px;

@@ -63,12 +63,13 @@ defineEmits<{
 <style scoped>
 .risk-preview {
     flex: 1;
-    min-width: 300px;
+    min-height: 0;
     padding: 2rem;
     transition: border-color 0.3s ease;
     display: flex;
     flex-direction: column;
     justify-content: stretch;
+    margin: 0;
 }
 
 .button-wrapper {
@@ -133,10 +134,15 @@ defineEmits<{
 .input-group {
     margin-bottom: 1.5rem;
     transition: all 0.3s ease;
+    flex-shrink: 0;
 }
 
 .input-group:has(textarea) {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    margin-bottom: 0;
 }
 
 .input-group label {
@@ -145,13 +151,20 @@ defineEmits<{
     font-weight: 500;
     font-size: 0.95rem;
     color: var(--color-text);
+    flex-shrink: 0;
 }
 
 .input-wrapper {
     position: relative;
     border-radius: 8px;
     transition: all 0.3s ease;
-    height: calc(100% - 2rem);
+}
+
+.input-wrapper:has(textarea) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 /* Threat Input Border */
@@ -228,10 +241,10 @@ defineEmits<{
 
 .textarea-input {
     resize: none;
-    min-height: 120px;
-    height: 100%;
+    flex: 1;
     font-family: inherit;
     line-height: 1.5;
+    min-height: 0;
 }
 
 /* Mobile responsiveness */

@@ -20,7 +20,7 @@ function fetchProjects() {
         if (response.ok) {
             projects.value = await response.json();
         } else {
-            console.error('Failed to fetch projects');
+            console.error('Failed to fetch projects:', await response.text());
         }
     }).catch((error) => {
         console.error('Error fetching projects:', error);
@@ -58,9 +58,13 @@ fetchProjects();
 </template>
 
 <style scoped>
+    main {
+        margin-top: 2rem;
+    }
+
     .project-list {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
         width: 100%;
         gap: 1rem;
     }
@@ -94,5 +98,15 @@ fetchProjects();
     .loading-container p {
         color: #666;
         font-size: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        main {
+            margin-top: 0;
+        }
+
+        .project-list {
+            grid-template-columns: 1fr;
+        }
     }
 </style>

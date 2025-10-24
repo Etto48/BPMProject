@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import ProgressNav from './ProgressNav.vue'
 import RiskGraph from './RiskGraph.vue'
 import RiskThresholdSlider from './RiskThresholdSlider.vue'
 import RiskTooltip from './RiskTooltip.vue'
-import type { RiskPoint } from '../composables/useRiskCalculations'
+import ProjectAndRisksSidePanel from './ProjectAndRisksSidePanel.vue'
+import type { TrackedScoredRisk } from '@/types'
+import { useRoute, useRouter } from 'vue-router'
 
 interface DragState {
     index: number
@@ -12,21 +13,17 @@ interface DragState {
     tempProbability: number
 }
 
+const route = useRoute()
+const router = useRouter()
+const projectId = Number(route.params.id)
+
 // Risk threshold curve constant (impact * probability = k)
 const riskThreshold = ref(0.1)
 
-// Sample data - replace with actual data from props or API
-const threats = ref<RiskPoint[]>([
-    { id: '1', title: 'Budget Overrun', description: 'Project costs exceed allocated budget', impact: 8, probability: 6 },
-    { id: '2', title: 'Schedule Delay', description: 'Timeline extends beyond deadline', impact: 6, probability: 7 },
-    { id: '3', title: 'Resource Shortage', description: 'Key personnel unavailable', impact: 9, probability: 4 },
-])
-
-const opportunities = ref<RiskPoint[]>([
-    { id: '4', title: 'Early Completion', description: 'Finish project ahead of schedule', impact: 6, probability: 4 },
-    { id: '5', title: 'Cost Savings', description: 'Reduce expenses through optimization', impact: 8, probability: 6 },
-    { id: '6', title: 'Quality Improvement', description: 'Exceed quality expectations', impact: 9, probability: 5 },
-])
+const threats = ref<Array<TrackedScoredRisk>>([])
+const opportunities = ref<Array<TrackedScoredRisk>>([])
+const projectTitle = ref('')
+const projectDescription = ref('')
 
 const draggedThreatPoint = ref<DragState | null>(null)
 const draggedOpportunityPoint = ref<DragState | null>(null)
@@ -98,8 +95,8 @@ const handleMouseUp = () => {
     }
 }
 
-const findOverlappingPoints = (targetPoint: RiskPoint, type: 'threats' | 'opportunities'): RiskPoint[] => {
-    const overlapping: RiskPoint[] = [targetPoint]
+const findOverlappingPoints = (targetPoint: TrackedScoredRisk, type: 'threats' | 'opportunities'): TrackedScoredRisk[] => {
+    const overlapping: TrackedScoredRisk[] = [targetPoint]
     
     // Only check within the same graph type
     const pointsToCheck = type === 'threats' ? threats.value : opportunities.value
@@ -113,7 +110,7 @@ const findOverlappingPoints = (targetPoint: RiskPoint, type: 'threats' | 'opport
     return overlapping
 }
 
-const showTooltip = (event: MouseEvent, point: RiskPoint, pointId: string) => {
+const showTooltip = (event: MouseEvent, point: TrackedScoredRisk, pointId: string) => {
     if (draggedOpportunityPoint.value || draggedThreatPoint.value) return
     
     // Clear existing tooltips
@@ -123,10 +120,18 @@ const showTooltip = (event: MouseEvent, point: RiskPoint, pointId: string) => {
     // Find all overlapping points
     const overlapping = findOverlappingPoints(point, pointId.startsWith('opp') ? 'opportunities' : 'threats')
     
+    // Determine if mouse is closer to the right side of the screen
+    const isRightSide = event.clientX > window.innerWidth / 2
+    
+    // Tooltip width estimate (max-width: 300px + padding + border)
+    const tooltipWidth = 320
+    
     // Create tooltips for all overlapping points
     overlapping.forEach((p, index) => {
+        const xOffset = isRightSide ? -(tooltipWidth + 10) : 10
+        
         tooltips.value.push({
-            x: event.clientX + 10,
+            x: event.clientX + xOffset,
             y: event.clientY + 10 + (index * 80), // Offset each tooltip
             title: p.title,
             description: p.description
@@ -138,13 +143,63 @@ const hideTooltip = () => {
     tooltips.value = []
     hoveredPoints.value.clear()
 }
+
+function fetchProject() {
+    fetch(`/api/projects/${projectId}`, {
+        method: 'GET',
+        credentials: 'include',
+    }).then(async (response) => {
+        if (response.ok) {
+            const data = await response.json()
+            projectTitle.value = data.title || 'Untitled Project'
+            projectDescription.value = data.description || 'No description available'
+        } else {
+            console.error('Failed to fetch project:', await response.text())
+            router.push('/oops')
+        }
+    }).catch((error) => {
+        console.error('Error fetching project:', error)
+        router.push('/oops')
+    })
+}
+
+function fetchRiskScores() {
+    fetch(`/api/projects/${projectId}/gen/risks/scores`, {
+        method: 'GET',
+        credentials: 'include',
+    }).then(async (response) => {
+        if (response.ok) {
+            const data: Array<TrackedScoredRisk> = await response.json()
+            threats.value = data.filter(risk => risk.kind === 'threat')
+            opportunities.value = data.filter(risk => risk.kind === 'opportunity')
+        } else {
+            console.error('Failed to fetch risk scores:', await response.text())
+            router.push('/oops')
+        }
+    }).catch((error) => {
+        console.error('Error fetching risk scores:', error)
+        router.push('/oops')
+    })
+}
+
+fetchProject()
+fetchRiskScores()
 </script>
 
 <template>
     <div class="qualitative-analysis">
-        <div class="border-wrapper card gradient-border">
+        <!-- Side Panel -->
+        <ProjectAndRisksSidePanel 
+            :project-title="projectTitle"
+            :project-description="projectDescription"
+            :threats="threats"
+            :opportunities="opportunities"
+        />
+
+        <!-- Main Content -->
+        <div class="border-wrapper">
             <div class="content-wrapper-wrapper">
-                <h2 class="section-title gradient-text gradient-border-bottom">Qualitative Analysis</h2>
+                <!-- <h2 class="section-title gradient-text gradient-border-bottom">Qualitative Analysis</h2> -->
                 <div class="content-wrapper">
                     <div class="graphs-container">
                         <!-- Opportunities Graph -->
@@ -189,21 +244,20 @@ const hideTooltip = () => {
             :title="tooltip.title"
             :description="tooltip.description"
         />
-        
-        <ProgressNav :total="3" :completed="2" :previousEnabled="true" :nextEnabled="true"/>
     </div>
 </template>
 
 <style scoped>
 .qualitative-analysis {
-    padding: 1rem 2rem;
+    display: flex;
+    gap: 2rem;
+    padding: 0;
     width: 100%;
-    max-width: 1200px;
-    height: calc(100vh - 16rem);
-    margin: 0 auto;
+    flex: 1;
     background-color: var(--color-background);
     color: var(--color-text);
     transition: background-color 0.5s, color 0.5s;
+    align-items: stretch;
 }
 
 .section-title {
@@ -215,13 +269,19 @@ const hideTooltip = () => {
 }
 
 .border-wrapper {
-    height: 100%;
+    flex: 1;
+    min-width: 0;
+    height: fit-content;
+    align-self: center;
+    padding: 0;
+    padding-right: 2rem;
 }
 
 .content-wrapper-wrapper {
     display: flex;
     flex-direction: column;
     max-height: 100%;
+    height: 100%;
 }
 
 .content-wrapper {
@@ -243,8 +303,12 @@ const hideTooltip = () => {
 
 @media (max-width: 1024px) {
     .qualitative-analysis {
-        max-width: 600px;
+        flex-direction: column;
         height: fit-content;
+    }
+
+    .border-wrapper {
+        padding: 1rem;
     }
     
     .content-wrapper {

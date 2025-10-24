@@ -35,5 +35,22 @@ export type Project = {
 
 export type ProjectInDB = Project & {
   id: number
+  riskScoreThreshold: number
   currentStep: number
+}
+
+export type TrackedScoredRisk = Risk & {
+    id: number
+    impact: number // 1-10
+    probability: number // 1-10
+}
+
+/**
+ * A unified type for displaying risks in side panels
+ * Works with both RiskSuggestion (from risk discovery) and TrackedScoredRisk (from qualitative analysis)
+ */
+export type DisplayableRisk = {
+  title: string
+  kind: RiskKind
+  description: string
 }
