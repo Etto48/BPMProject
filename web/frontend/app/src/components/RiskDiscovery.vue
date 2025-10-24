@@ -69,11 +69,11 @@ function fetchProject() {
             projectDescription.value = data.description || 'No description available';
         } else {
             console.log('Failed to fetch project data');
-            router.push('/internal-server-error');
+            router.push('/oops');
         }
     }).catch((error) => {
         console.error('Error fetching project data:', error);
-        router.push('/internal-server-error');
+        router.push('/oops');
     })
 }
 
@@ -100,13 +100,47 @@ function fetchSuggestedRisks() {
             });
         } else {
             console.error('Failed to fetch suggested risks');
-            router.push('/internal-server-error');
+            router.push('/oops');
         }
     }).catch((error) => {
         console.error('Error fetching suggested risks:', error);
-        router.push('/internal-server-error');
+        router.push('/oops');
     }).finally(() => {
         isLoadingRisks.value = false;
+    })
+}
+
+function uploadRisks() {
+    const risksToUpload: Array<Risk> = [
+        ...acceptedThreats.value.map((risk) => ({
+            kind: RiskKind.Threat,
+            title: risk.title,
+            description: risk.description,
+        })),
+        ...acceptedOpportunities.value.map((risk) => ({
+            kind: RiskKind.Opportunity,
+            title: risk.title,
+            description: risk.description,
+        })),
+    ];
+    fetch(`/api/projects/${projectId}/risks`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ risks: risksToUpload }),
+    }).then(async (response) => {
+        if (response.ok) {
+            console.log('Successfully uploaded risks');
+            router.push(`/projects/${projectId}/qualitative-analysis`);
+        } else {
+            console.error('Failed to upload risks');
+            router.push('/oops');
+        }
+    }).catch((error) => {
+        console.error('Error uploading risks:', error);
+        router.push('/oops');
     })
 }
 
@@ -135,7 +169,7 @@ fetchSuggestedRisks();
             <RiskPreview :index="currentSuggestionIndex" :suggestions="suggestedRisks" @accept="actionOnCurrent(true)" @reject="actionOnCurrent(false)"/>
         </div>
     </div>
-    <ProgressNav :total="3" :completed="1" :previousEnabled="false" :nextEnabled="true"/>
+    <ProgressNav :total="3" :completed="1" :previousEnabled="false" :nextEnabled="true" @navigate-next="uploadRisks"/>
 </template>
 
 <style scoped>
