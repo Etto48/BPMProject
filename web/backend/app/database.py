@@ -119,14 +119,11 @@ class ProjectRepository:
         try:
             async with self.conn.transaction():
                 async with self.conn.cursor() as cursor:
-                    # Verify project ownership
+                    # Update project's current step
                     await cursor.execute(
-                        "SELECT id FROM projects WHERE id = %s AND user_id = %s",
-                        (projectId, userId)
+                        "UPDATE projects SET current_step = %s WHERE id = %s",
+                        (1, projectId)
                     )
-                    project = await cursor.fetchone()
-                    if not project:
-                        return None  # Project not found or not owned by user
 
                     # Insert risks
                     inserted_risks = []
@@ -165,6 +162,11 @@ class ProjectRepository:
         try:
             async with self.conn.transaction():
                 async with self.conn.cursor() as cursor:
+                    # Update project's current step
+                    await cursor.execute(
+                        "UPDATE projects SET current_step = %s WHERE id = %s",
+                        (2, projectId)
+                    )
                     # Update project's risk score threshold
                     await cursor.execute(
                         """
@@ -192,6 +194,11 @@ class ProjectRepository:
         try:
             async with self.conn.transaction():
                 async with self.conn.cursor() as cursor:
+                    # Update project's current step
+                    await cursor.execute(
+                        "UPDATE projects SET current_step = %s WHERE id = %s",
+                        (3, projectId)
+                    )
                     for risk in managed_risks:
                         await cursor.execute(
                             """

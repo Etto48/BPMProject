@@ -7,7 +7,7 @@ from database import UserRepository, ProjectRepository
 from auth import hash_password, verify_password
 from models import Project, ProjectInDB, Risk, RiskInDB, ScoredRisk, TrackedManagedRisk, TrackedScoredRisk, UserData, UserResponse, UserInDB
 
-from llm import LLM
+from llm import LLM # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -243,6 +243,13 @@ async def add_project_risk(
             detail="Not logged in"
         )
     user_id = request.session["user_id"]
+
+    project = await db.get_project_by_id(project_id, user_id)
+    if project is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found"
+        )
 
     added_risks = await db.add_project_risks(project_id, user_id, risks_data)
     if not added_risks:
