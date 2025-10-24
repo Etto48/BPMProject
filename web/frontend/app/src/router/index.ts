@@ -37,9 +37,9 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/internal-server-error',
-      name: 'internal-server-error',
-      component: () => import('../views/InternalServerErrorView.vue')
+      path: '/oops',
+      name: 'oops',
+      component: () => import('../views/OopsView.vue')
     },
     {
       path: '/:pathMatch(.*)*',
