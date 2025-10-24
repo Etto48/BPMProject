@@ -119,6 +119,11 @@ class ProjectRepository:
         try:
             async with self.conn.transaction():
                 async with self.conn.cursor() as cursor:
+                    # Delete existing risks for the project
+                    await cursor.execute(
+                        "DELETE FROM risks WHERE project_id = %s",
+                        (projectId,)
+                    )
                     # Update project's current step
                     await cursor.execute(
                         "UPDATE projects SET current_step = %s WHERE id = %s",
