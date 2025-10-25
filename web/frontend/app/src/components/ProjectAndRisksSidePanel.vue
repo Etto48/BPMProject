@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { ChevronDown } from 'lucide-vue-next'
 import ExpandableProjectCard from './ExpandableProjectCard.vue'
-import type { DisplayableRisk } from '@/types'
+import type { DisplayableRisk, ProjectInDB } from '@/types'
 import { useRoute, useRouter } from 'vue-router'
 import { X } from 'lucide-vue-next'
 
@@ -11,22 +11,24 @@ interface Props {
     opportunities: Array<DisplayableRisk>
     allowRemove?: boolean
     allowSelect?: boolean
+    showRiskScoreThreshold?: boolean
     selectedRisk?: { kind: 'threat' | 'opportunity', index: number } | null
 }
 
 const route = useRoute()
 const projectId = Number(route.params.id)
 const router = useRouter()
-const projectTitle = ref('')
-const projectDescription = ref('')
+const project = ref<ProjectInDB | null>(null)
 
 withDefaults(defineProps<Props>(), {
     allowRemove: false,
     allowSelect: false,
+    showRiskScoreThreshold: false,
     selectedRisk: null
 })
 
 const emit = defineEmits<{
+    projectUpdated: [project: ProjectInDB]
     removeRisk: [kind: 'threat' | 'opportunity', index: number]
     selectRisk: [kind: 'threat' | 'opportunity', index: number]
 }>()
@@ -40,9 +42,9 @@ function fetchProject() {
         credentials: 'include',
     }).then(async (response) => {
         if (response.ok) {
-            const projectData = await response.json();
-            projectTitle.value = projectData.title;
-            projectDescription.value = projectData.description;
+            const projectData: ProjectInDB = await response.json();
+            project.value = projectData;
+            emit('projectUpdated', projectData);
         } else {
             console.error('Failed to fetch project data:', await response.text());
             router.push('/oops');
@@ -58,7 +60,7 @@ fetchProject();
 
 <template>
     <div class="side-panel">
-        <ExpandableProjectCard :title="projectTitle" :description="projectDescription" />
+        <ExpandableProjectCard :project="project" :show-risk-score-threshold="showRiskScoreThreshold" />
     
         <div class="card opportunity-log hoverable" @click="showOpportunities = !showOpportunities">
             <h2 class="capsule" :class="{ 'open': showOpportunities }">

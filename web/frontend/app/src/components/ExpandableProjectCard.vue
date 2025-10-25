@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { ChevronDown } from 'lucide-vue-next';
+import type { ProjectInDB } from '@/types';
 
-interface Props {
-    title: string;
-    description: string;
-}
-
-defineProps<Props>();
+withDefaults(defineProps<{
+    project: ProjectInDB | null
+    showRiskScoreThreshold?: boolean
+}>(), {
+    showRiskScoreThreshold: false
+});
 
 const showDescription = ref(true);
 </script>
@@ -15,18 +16,49 @@ const showDescription = ref(true);
 <template>
     <div class="card gradient-border hoverable project-info" @click="showDescription = !showDescription">
         <h3 class="gradient-background capsule project-title" :class="{ 'open': showDescription }">
-            <span>{{ title }}</span>
+            <span>{{ project?.title }}</span>
             <ChevronDown class="arrow" :class="{ 'open': showDescription }" :size="20" />
         </h3>
         <Transition name="description">
-            <div v-if="showDescription" class="gradient-background-light project-description">
-                <p>{{ description }}</p>
+            <div v-if="showDescription">
+                <div v-if="showRiskScoreThreshold" class="risk-score-panel">
+                    <small>Risk Score Threshold</small><strong>{{ ((project?.riskScoreThreshold || 0) * 100).toFixed(0) }}%</strong>
+                </div>
+                <div class="gradient-background-light project-description">
+                    <p>{{ project?.description }}</p>
+                </div>
             </div>
         </Transition>
     </div>
 </template>
 
 <style scoped>
+.risk-score-panel small {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-text-mute);
+    padding: 0.5rem 2rem;
+    border-right: 2px solid var(--color-border);
+}
+
+.risk-score-panel strong {
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    padding: 0.5rem 2rem;
+}
+
+.risk-score-panel {
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    padding: 0;
+    background-color: var(--color-background-mute);
+    display: flex;
+    flex-direction: row;
+    justify-content: end;
+    align-items: stretch;
+}
+
 .project-info {
     cursor: pointer;
     transition: background-color 0.2s ease, border-color 0.2s ease;

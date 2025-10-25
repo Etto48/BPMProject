@@ -89,6 +89,7 @@ fetchRiskPlans();
             :threats="acceptedThreats"
             :opportunities="acceptedOpportunities"
             :allow-remove="false"
+            :show-risk-score-threshold="true"
         />
         <RiskPlanPreview
             v-if="!allRisksAccepted"
@@ -137,6 +138,7 @@ main {
     align-items: center;
     justify-content: start;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .completion-card {
@@ -174,7 +176,7 @@ main {
 }
 
 .summary strong {
-    color: var(--color-accent-1);
+    font-weight: 700;
 }
 
 .large-button {

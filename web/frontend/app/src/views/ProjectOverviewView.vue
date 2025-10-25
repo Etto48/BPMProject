@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
 import ProjectAndRisksSidePanel from '@/components/ProjectAndRisksSidePanel.vue';
-import RiskDetailView from '@/components/RiskDetailView.vue';
+import RiskDetailView from '@/components/RiskDetails.vue';
 import type { DisplayableRisk } from '@/types';
 import { ref, computed } from 'vue';
 
@@ -63,6 +63,7 @@ fetchRisks();
             :threats="threats"
             :opportunities="opportunities"
             :allow-select="true"
+            :show-risk-score-threshold="true"
             :selected-risk="selectedRisk"
             @selectRisk="selectRisk"
         />
@@ -80,5 +81,14 @@ main {
     justify-content: stretch;
     flex: 1;
     overflow: hidden;
+}
+
+@media (max-width: 768px) {
+    main {
+        gap: 0;
+        flex-direction: column-reverse;
+        align-items: stretch;
+        height: auto;
+    }
 }
 </style>
