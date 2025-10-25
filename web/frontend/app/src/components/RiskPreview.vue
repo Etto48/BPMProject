@@ -18,6 +18,17 @@ const currentRisk = computed(() => {
     };
 });
 
+// Calculate the split point for the progress bar background (excluding the last custom risk)
+const opportunityCount = computed(() => {
+    return props.suggestions.slice(0, -1).filter(r => r.kind === RiskKind.Opportunity).length;
+});
+
+const splitPercentage = computed(() => {
+    const totalRisks = props.suggestions.length - 1; // Exclude custom risk
+    if (totalRisks === 0) return 50;
+    return (opportunityCount.value / totalRisks) * 100;
+});
+
 defineEmits<{
     (e: 'accept'): void
     (e: 'reject'): void
@@ -34,7 +45,7 @@ defineEmits<{
             </linearGradient>
         </defs>
     </svg>
-    <div class="card risk-preview" :class="isLoading ? 'gradient-border' : (currentRisk.kind === RiskKind.Opportunity ? 'opportunity-border' : 'threat-border')">
+    <div class="card risk-preview">
         <!-- Loading Overlay -->
         <Transition name="fade">
             <div v-if="isLoading" class="loading-overlay">
@@ -44,6 +55,26 @@ defineEmits<{
                 </div>
             </div>
         </Transition>
+
+        <!-- Progress Indicator -->
+        <div v-if="index < suggestions.length - 1" class="progress-indicator">
+            <span class="progress-text">Risk {{ index + 1 }} of {{ suggestions.length - 1 }}</span>
+            <div class="progress-bar">
+                <div class="progress-background" :style="{ 
+                    background: `linear-gradient(to right, var(--color-opportunity) 0%, var(--color-opportunity) ${splitPercentage}%, var(--color-threat) ${splitPercentage}%, var(--color-threat) 100%)`
+                }"></div>
+                <div class="progress-fill" :style="{ 
+                    background: `linear-gradient(to right, var(--color-opportunity) 0%, var(--color-opportunity) ${splitPercentage}%, var(--color-threat) ${splitPercentage}%, var(--color-threat) 100%)`,
+                    clipPath: `inset(0 ${100 - ((index + 1) / (suggestions.length - 1)) * 100}% 0 0)`
+                }"></div>
+            </div>
+        </div>
+
+        <!-- Custom Risk Message -->
+        <div v-else class="custom-risk-message">
+            <Sparkles class="custom-icon" :size="20" />
+            <span class="custom-text">Add your own custom risks</span>
+        </div>
 
         <div class="tab-selector">
             <button 
@@ -91,6 +122,68 @@ defineEmits<{
     justify-content: stretch;
     margin: 0;
     position: relative;
+}
+
+.progress-indicator {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.progress-text {
+    font-size: 0.9rem;
+    color: var(--color-text-muted, #999);
+    font-weight: 500;
+}
+
+.progress-bar {
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.2;
+    z-index: 0;
+}
+
+.progress-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: clip-path 0.3s ease;
+    z-index: 1;
+}
+
+.custom-risk-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.custom-icon {
+    fill: url(#sparkle-gradient);
+    stroke: url(#sparkle-gradient);
+    flex-shrink: 0;
+}
+
+.custom-text {
+    font-size: 0.95rem;
+    color: var(--color-text);
+    font-weight: 600;
 }
 
 .loading-overlay {

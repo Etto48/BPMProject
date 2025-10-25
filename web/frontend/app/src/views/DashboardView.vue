@@ -21,9 +21,11 @@ function fetchProjects() {
             projects.value = await response.json();
         } else {
             console.error('Failed to fetch projects:', await response.text());
+            router.push('/oops');
         }
     }).catch((error) => {
         console.error('Error fetching projects:', error);
+        router.push('/oops');
     }).finally(() => {
         loading.value = false;
     });

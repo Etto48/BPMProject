@@ -361,44 +361,30 @@ async def generate_risk_plans(
         )
 
     # Filter the risks to only those that have impact*probability > project.risk_score_threshold*100
-    significant_risks = [risk for risk in risks if risk.impact is not None and risk.probability is not None and (risk.impact * risk.probability) > (project.riskScoreThreshold * 100)]
-    
-    # TODO: Call LLM to generate risk plans
-
-    managed_risks = [
-        TrackedManagedRisk(
-            id=1,
-            kind='threat',
-            title='Supplier bankruptcy risk',
-            description='Our main component supplier is facing financial difficulties due to market downturn. If they go bankrupt, we would need to find alternative suppliers, causing delays of 2-3 months in the production schedule and requiring re-certification of new components.',
-            impact=8,
-            probability=4,
-            contingency="Identify and pre-qualify two alternative suppliers. Maintain regular communication with current supplier to monitor their financial health.",
-            fallback="Activate emergency procurement from pre-qualified suppliers and expedite component re-certification process using parallel testing."
-        ),
-        TrackedManagedRisk(
-            id=2,
-            kind='opportunity',
-            title='Early framework release',
-            description='The UI framework we depend on is ahead of schedule and may release version 2.0 earlier than expected. This would allow us to leverage improved performance features and reduce our custom workaround code by approximately 30%.',
-            impact=6,
-            probability=7,
-            contingency="Allocate developer time to test beta versions and prepare migration plan. Document potential breaking changes early.",
-            fallback=None
-        ),
-        TrackedManagedRisk(
-            id=3,
-            kind='threat',
-            title='Key developer resignation',
-            description='Our lead backend developer has been approached by competitors and may leave the company. This developer holds critical knowledge about our legacy authentication system and their departure would significantly slow down the planned security upgrade.',
-            impact=9,
-            probability=5,
-            contingency="Conduct knowledge transfer sessions and create comprehensive documentation of the authentication system. Cross-train two junior developers.",
-            fallback="Hire a specialized contractor with authentication system experience and delay non-critical features to focus resources on the security upgrade."
+    significant_risks = []
+    insignificant_risks = []
+    for risk in risks:
+        tracked_risk = TrackedScoredRisk(
+            id=risk.id,
+            title=risk.title,
+            kind=risk.kind,
+            description=risk.description,
+            impact=risk.impact or 1,
+            probability=risk.probability or 1
         )
-    ]
+        risk_score = tracked_risk.impact * tracked_risk.probability
+        threshold_score = (project.riskScoreThreshold or 0) * 100
 
-    return managed_risks
+        if risk_score > threshold_score:
+            significant_risks.append(tracked_risk)
+        else:
+            insignificant_risks.append(tracked_risk)
+
+    significant_risks = list(map(lambda r: TrackedScoredRisk(**r.model_dump()), significant_risks))
+
+    managed_risks = await llm.generate_risk_mitigation_plan(project, significant_risks)
+
+    return managed_risks + [TrackedManagedRisk(**r.model_dump(), contingency=None, fallback=None) for r in insignificant_risks]
 
 @api.post("/projects/{project_id}/risks/plans")
 async def add_risk_plans(
