@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { RouterLink, RouterView, useRoute } from 'vue-router';
 import AccountMenu from '@/components/AccountMenu.vue';
+import ProgressBreadcrumbs from '@/components/ProgressBreadcrumbs.vue';
 
 const route = useRoute();
 const isLoginView = computed(() => route.name === 'login' || route.name == null);
@@ -17,6 +18,7 @@ const isLoginView = computed(() => route.name === 'login' || route.name == null)
         </RouterLink>
       </nav>
     </div>
+    <ProgressBreadcrumbs />
     <AccountMenu />
   </header>
 

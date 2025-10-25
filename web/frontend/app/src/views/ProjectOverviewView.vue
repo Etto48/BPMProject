@@ -2,12 +2,14 @@
 import { useRoute, useRouter } from 'vue-router';
 import ProjectAndRisksSidePanel from '@/components/ProjectAndRisksSidePanel.vue';
 import RiskDetailView from '@/components/RiskDetails.vue';
-import type { DisplayableRisk } from '@/types';
+import type { ProjectInDB, DisplayableRisk } from '@/types';
 import { ref, computed } from 'vue';
 
 const route = useRoute();
 const projectId = Number(route.params.id);
 const router = useRouter();
+
+const project = ref<ProjectInDB | null>(null);
 
 const threats = ref<Array<DisplayableRisk>>([]);
 const opportunities = ref<Array<DisplayableRisk>>([]);
@@ -31,6 +33,10 @@ function selectDefaultRisk() {
 
 function selectRisk(kind: 'threat' | 'opportunity', index: number) {
     selectedRisk.value = { kind, index };
+}
+
+function projectUpdated(_project: ProjectInDB) {
+    project.value = _project;
 }
 
 function fetchRisks() {
@@ -66,6 +72,7 @@ fetchRisks();
             :show-risk-score-threshold="true"
             :selected-risk="selectedRisk"
             @selectRisk="selectRisk"
+            @project-updated="projectUpdated"
         />
         <RiskDetailView :risk="currentRisk" />
     </main>

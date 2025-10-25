@@ -2,9 +2,9 @@
 import { ref } from 'vue'
 import { ChevronDown } from 'lucide-vue-next'
 import ExpandableProjectCard from './ExpandableProjectCard.vue'
-import type { DisplayableRisk, ProjectInDB } from '@/types'
-import { useRoute, useRouter } from 'vue-router'
+import type { DisplayableRisk } from '@/types'
 import { X } from 'lucide-vue-next'
+import { useProject } from '@/composables/useProject'
 
 interface Props {
     threats: Array<DisplayableRisk>
@@ -15,10 +15,7 @@ interface Props {
     selectedRisk?: { kind: 'threat' | 'opportunity', index: number } | null
 }
 
-const route = useRoute()
-const projectId = Number(route.params.id)
-const router = useRouter()
-const project = ref<ProjectInDB | null>(null)
+const { project } = useProject()
 
 withDefaults(defineProps<Props>(), {
     allowRemove: false,
@@ -28,34 +25,12 @@ withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-    projectUpdated: [project: ProjectInDB]
     removeRisk: [kind: 'threat' | 'opportunity', index: number]
     selectRisk: [kind: 'threat' | 'opportunity', index: number]
 }>()
 
 const showOpportunities = ref(true)
 const showThreats = ref(true)
-
-function fetchProject() {
-    fetch(`/api/projects/${projectId}`, {
-        method: 'GET',
-        credentials: 'include',
-    }).then(async (response) => {
-        if (response.ok) {
-            const projectData: ProjectInDB = await response.json();
-            project.value = projectData;
-            emit('projectUpdated', projectData);
-        } else {
-            console.error('Failed to fetch project data:', await response.text());
-            router.push('/oops');
-        }
-    }).catch((error) => {
-        console.error('Error fetching project data:', error);
-        router.push('/oops');
-    });
-}
-
-fetchProject();
 </script>
 
 <template>

@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import DashboardView from '../views/DashboardView.vue'
 import Login from '../views/LoginView.vue'
 import { useCurrentUser } from '@/composables/useCurrentUser'
+import { useProject } from '@/composables/useProject'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -62,6 +63,7 @@ const router = createRouter({
 })
 
 const { currentUser, fetchUser, clearUser } = useCurrentUser();
+const { fetchProject, clearProject } = useProject();
 
 // Navigation guard
 router.beforeEach(async (to, from, next) => {
@@ -84,6 +86,21 @@ router.beforeEach(async (to, from, next) => {
   // Allow navigation
   else {
     next();
+  }
+});
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+router.afterEach(async (to, from) => {
+  // If navigating to a project-related route, fetch the project data
+  if (to.params.id) {
+    const projectId = Number(to.params.id);
+    if (!isNaN(projectId)) {
+      await fetchProject(projectId);
+    } else {
+      clearProject();
+    }
+  } else {
+    clearProject();
   }
 });
 
