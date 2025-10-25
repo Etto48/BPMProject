@@ -1,7 +1,8 @@
+import asyncio
 import openai
 
-from models import Project, Risks, TrackedRisk, TrackedScoredRisk, generate_risk_score_model
-from prompts import GENERATE_RISK_SCORES, GENERATE_RISKS
+from models import ContingencyAndFallback, Project, Risks, TrackedManagedRisk, TrackedRisk, TrackedScoredRisk, generate_risk_score_model
+from prompts import GENERATE_RISK_MITIGATION_PLAN_OPPORTUNITY, GENERATE_RISK_MITIGATION_PLAN_THREAT, GENERATE_RISK_SCORES, GENERATE_RISKS
 
 class LLM:
     def __init__(self, url: str, model: str, api_key: str = ""):
@@ -67,4 +68,32 @@ class LLM:
                 **scores[f"risk_{risk.id}"]
             )
             ret.append(ts_risk)
+        return ret
+    
+    async def generate_risk_mitigation_plan(self, project: Project, risks: list[TrackedScoredRisk]):
+        responses = await asyncio.gather(*[
+            self.client.chat.completions.parse(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": GENERATE_RISK_MITIGATION_PLAN_OPPORTUNITY if risk.kind == "opportunity" else GENERATE_RISK_MITIGATION_PLAN_THREAT
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Project Title: \"{project.title}\"\nProject Description: \"{project.description}\"\n{risk.kind.capitalize()} Title: \"{risk.title}\"\n{risk.kind.capitalize()} Description: \"{risk.description}\"\nImpact Score: {risk.impact}\nProbability Score: {risk.probability}"
+                    }
+                ],
+                response_format=ContingencyAndFallback
+            ) for risk in risks
+        ])
+
+        ret = []
+        for risk, response in zip(risks, responses):
+            plan = response.choices[0].message.parsed
+            tm_risk = TrackedManagedRisk(
+                **risk.model_dump(),
+                **plan.model_dump()
+            )
+            ret.append(tm_risk)
         return ret
