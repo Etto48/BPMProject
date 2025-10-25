@@ -163,7 +163,7 @@ class ProjectRepository:
         except psycopg.IntegrityError:
             return None
         
-    async def add_project_risks_scores(self, projectId: int, userId: int, scored_risks: list[TrackedScoredRisk], riskScoreThreshold: float) -> bool:
+    async def add_project_risks_scores(self, projectId: int, userId: int, scored_risks: list[TrackedScoredRisk], riskScoreThreshold: float) -> Optional[list[RiskInDB]]:
         try:
             async with self.conn.transaction():
                 async with self.conn.cursor() as cursor:
@@ -182,20 +182,37 @@ class ProjectRepository:
                         (riskScoreThreshold, projectId)
                     )
                     # Update risks with scores
+                    updated_risks = []
                     for risk in scored_risks:
                         await cursor.execute(
                             """
                             UPDATE risks
                             SET impact = %s, probability = %s
                             WHERE id = %s AND project_id = %s
+                            RETURNING id, kind, title, description, impact, probability
                             """,
                             (risk.impact, risk.probability, risk.id, projectId)
                         )
-                    return True
+                        row = await cursor.fetchone()
+                        if row:
+                            updated_risks.append(
+                                RiskInDB(
+                                    id=row[0],
+                                    projectId=projectId,
+                                    kind=row[1],
+                                    title=row[2],
+                                    description=row[3],
+                                    impact=row[4],
+                                    probability=row[5],
+                                    contingency=None,
+                                    fallback=None
+                                )
+                            )
+                    return updated_risks
         except psycopg.IntegrityError:
-            return False
-        
-    async def add_project_risks_plans(self, projectId: int, userId: int, managed_risks: list[TrackedManagedRisk]) -> bool:
+            return None
+
+    async def add_project_risks_plans(self, projectId: int, userId: int, managed_risks: list[TrackedManagedRisk]) -> Optional[list[RiskInDB]]:
         try:
             async with self.conn.transaction():
                 async with self.conn.cursor() as cursor:
@@ -204,17 +221,34 @@ class ProjectRepository:
                         "UPDATE projects SET current_step = %s WHERE id = %s",
                         (3, projectId)
                     )
+                    updated_risks = []
                     for risk in managed_risks:
                         await cursor.execute(
                             """
                             UPDATE risks
                             SET contingency = %s, fallback = %s
                             WHERE id = %s AND project_id = %s
+                            RETURNING id, kind, title, description, impact, probability, contingency, fallback
                             """,
                             (risk.contingency, risk.fallback, risk.id, projectId)
                         )
-                    return True
+                        row = await cursor.fetchone()
+                        if row:
+                            updated_risks.append(
+                                RiskInDB(
+                                    id=row[0],
+                                    projectId=projectId,
+                                    kind=row[1],
+                                    title=row[2],
+                                    description=row[3],
+                                    impact=row[4],
+                                    probability=row[5],
+                                    contingency=row[6],
+                                    fallback=row[7]
+                                )
+                            )
+                    return updated_risks
         except psycopg.IntegrityError:
-            return False
+            return None
         
     

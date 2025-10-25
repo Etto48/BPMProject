@@ -142,7 +142,7 @@ async def create_project(
         )
 
     user_id = request.session["user_id"]
-    project = await db.create_project(project_data, user_id)
+    project : Optional[ProjectInDB] = await db.create_project(project_data, user_id)
 
     if project is None:
         raise HTTPException(
