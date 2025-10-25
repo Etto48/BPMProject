@@ -10,6 +10,8 @@ interface Props {
     threats: Array<DisplayableRisk>
     opportunities: Array<DisplayableRisk>
     allowRemove?: boolean
+    allowSelect?: boolean
+    selectedRisk?: { kind: 'threat' | 'opportunity', index: number } | null
 }
 
 const route = useRoute()
@@ -19,11 +21,14 @@ const projectTitle = ref('')
 const projectDescription = ref('')
 
 withDefaults(defineProps<Props>(), {
-    allowRemove: false
+    allowRemove: false,
+    allowSelect: false,
+    selectedRisk: null
 })
 
 const emit = defineEmits<{
     removeRisk: [kind: 'threat' | 'opportunity', index: number]
+    selectRisk: [kind: 'threat' | 'opportunity', index: number]
 }>()
 
 const showOpportunities = ref(true)
@@ -62,7 +67,7 @@ fetchProject();
             </h2>
             <Transition name="risk-list">
                 <div v-if="showOpportunities" class="risk-list-container">
-                    <div v-for="(opportunity, i) in opportunities" :key="i" class="risk-entry opportunity capsule" @click.stop>
+                    <div v-for="(opportunity, i) in opportunities" :key="i" class="risk-entry opportunity capsule" :class="{ 'selectable': allowSelect, 'selected': selectedRisk?.kind === 'opportunity' && selectedRisk?.index === i }" @click.stop="allowSelect && emit('selectRisk', 'opportunity', i)">
                         <h3 class="risk-title">{{ opportunity.title }}</h3>
                         <X v-if="allowRemove" class="remove-button" @click="emit('removeRisk', 'opportunity', i)" title="Remove risk" role="button" />
                     </div>
@@ -76,7 +81,7 @@ fetchProject();
             </h2>
             <Transition name="risk-list">
                 <div v-if="showThreats" class="risk-list-container">
-                    <div v-for="(threat, i) in threats" :key="i" class="risk-entry threat capsule" @click.stop>
+                    <div v-for="(threat, i) in threats" :key="i" class="risk-entry threat capsule" :class="{ 'selectable': allowSelect, 'selected': selectedRisk?.kind === 'threat' && selectedRisk?.index === i }" @click.stop="allowSelect && emit('selectRisk', 'threat', i)">
                         <h3 class="risk-title">{{ threat.title }}</h3>
                         <X v-if="allowRemove" class="remove-button" @click="emit('removeRisk', 'threat', i)" title="Remove risk" role="button" />
                     </div>
@@ -184,6 +189,33 @@ h2 {
 
 .risk-entry.opportunity {
     background-color: var(--color-opportunity-light);
+}
+
+.risk-entry.selectable {
+    cursor: pointer;
+    transition: filter 0.2s ease;
+}
+
+@media (hover: hover) {
+    .risk-entry.selectable:hover {
+        filter: brightness(0.5);
+    }
+}
+
+.risk-entry.selectable.selected {
+    filter: brightness(0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+    @media (hover: hover) {
+        .risk-entry.selectable:hover {
+            filter: brightness(1.5);
+        }
+    }
+
+    .risk-entry.selectable.selected {
+        filter: brightness(1.8);
+    }
 }
 
 .risk-title {

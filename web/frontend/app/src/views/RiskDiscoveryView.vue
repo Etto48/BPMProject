@@ -2,7 +2,6 @@
 import { ref, toRaw, computed } from 'vue';
 import RiskPreview from '@/components/RiskPreview.vue';
 import { RiskKind, type Risk, type RiskSuggestion } from '@/types';
-import RiskSuggestionProgress from '@/components/RiskSuggestionProgress.vue';
 import ProjectAndRisksSidePanel from '@/components/ProjectAndRisksSidePanel.vue';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -52,7 +51,7 @@ function actionOnCurrent(accept: boolean) {
     }
 }
 
-function remove_risk(kind: 'threat' | 'opportunity', index: number) {
+function removeRisk(kind: 'threat' | 'opportunity', index: number) {
     if (kind === 'threat') {
         acceptedThreats.value.splice(index, 1);
     } else {
@@ -69,7 +68,13 @@ function fetchSuggestedRisks() {
         if (response.ok) {
             const data: Array<Risk> = await response.json();
             console.log('Fetched suggested risks:', data);
-            suggestedRisks.value = data.map((risk) => ({
+            // Sort: opportunities first, then threats
+            const sortedData = data.sort((a, b) => {
+                if (a.kind === RiskKind.Opportunity && b.kind === RiskKind.Threat) return -1;
+                if (a.kind === RiskKind.Threat && b.kind === RiskKind.Opportunity) return 1;
+                return 0;
+            });
+            suggestedRisks.value = sortedData.map((risk) => ({
                 kind: risk.kind,
                 title: risk.title,
                 description: risk.description,
@@ -136,11 +141,10 @@ fetchSuggestedRisks();
             :threats="acceptedThreats"
             :opportunities="acceptedOpportunities"
             :allow-remove="true"
-            @remove-risk="remove_risk"
+            @remove-risk="removeRisk"
         />
         <div class="flex-column preview-wrapper">
             <div class="preview-container">
-                <RiskSuggestionProgress :index="currentSuggestionIndex" :suggestions="suggestedRisks" :isLoading="isLoadingRisks" />
                 <RiskPreview :index="currentSuggestionIndex" :suggestions="suggestedRisks" :isLoading="isLoadingRisks" @accept="actionOnCurrent(true)" @reject="actionOnCurrent(false)"/>
                 <Transition name="fade-slide">
                     <div v-if="allRisksProcessed" class="continue-section">

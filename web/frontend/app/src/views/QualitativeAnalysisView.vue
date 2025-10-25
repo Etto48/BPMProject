@@ -38,7 +38,7 @@ const tooltips = ref<Array<{
 const hoveredPoints = ref<Set<string>>(new Set())
 
 function handleContinue() {
-    const data: QualitativeAnalysisData = {
+    const risksToUpload: QualitativeAnalysisData = {
         riskScoreThreshold: riskThreshold.value,
         risks: [...threats.value, ...opportunities.value]
     }
@@ -48,7 +48,7 @@ function handleContinue() {
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(risksToUpload)
     }).then(async (response) => {
         if (response.ok) {
             router.push(`/project/${projectId}/planning`)

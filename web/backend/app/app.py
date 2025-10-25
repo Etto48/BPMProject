@@ -6,7 +6,7 @@ import logging
 import psycopg
 
 from api import api
-from llm import LLM
+from mockups.llm import LLM
 
 logger = logging.getLogger(__name__)
 
