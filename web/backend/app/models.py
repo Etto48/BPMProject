@@ -61,7 +61,7 @@ class QualitativeAnalysisData(BaseModel):
     risks: list[TrackedScoredRisk]
     riskScoreThreshold: float
 
-class TrackedManagedRisk(TrackedScoredRisk):
+class ContingencyAndFallback(BaseModel):
     contingency: Optional[str] = Field(
         default=None,
         description="Contingency plan describing preventive actions to avoid the risk from occurring"
@@ -70,6 +70,9 @@ class TrackedManagedRisk(TrackedScoredRisk):
         default=None,
         description="Fallback plan describing actions to minimize damage if the risk occurs"
     )
+
+class TrackedManagedRisk(TrackedScoredRisk, ContingencyAndFallback):
+    ...
 
 class RiskInDB(BaseModel):
     id: int
@@ -89,5 +92,15 @@ def generate_risk_score_model(risks: list[TrackedRisk]):
     }
     return create_model(
         "RiskScores",
+        **fields
+    )
+
+def generate_managed_risk_model(risks: list[TrackedScoredRisk]):    
+    fields = {
+        f"risk_{risk.id}": (ContingencyAndFallback, 
+            Field(..., description=f"Contingency and fallback plans for risk with ID {risk.id} ({risk.title})")) for risk in risks
+    }
+    return create_model(
+        "ManagedRisks",
         **fields
     )

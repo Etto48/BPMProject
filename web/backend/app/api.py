@@ -226,6 +226,13 @@ async def get_project_risks(
         )
     user_id = request.session["user_id"]
 
+    project = await db.get_project_by_id(project_id, user_id)
+    if project is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found"
+        )
+
     risks = await db.get_project_risks(project_id, user_id)
 
     return risks
