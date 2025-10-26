@@ -20,6 +20,12 @@ const router = createRouter({
       meta: { requiresGuest: true }
     },
     {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../views/ProfileView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/project/create',
       name: 'create-project',
       component: () => import('../views/CreateProjectView.vue'),

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue';
-import { ChevronDown, LogOut, User, Settings, HelpCircle } from 'lucide-vue-next';
+import { ChevronDown, LogOut, User, HelpCircle } from 'lucide-vue-next';
 import { useCurrentUser } from '@/composables/useCurrentUser';
 import { useRouter } from 'vue-router';
 
@@ -56,13 +56,9 @@ onUnmounted(() => {
         </Transition>
         <Transition name="dropdown">
             <div v-if="isMenuOpen" class="dropdown-menu">
-                <button @click="closeMenu" class="dropdown-item">
+                <button @click="{{closeMenu(); router.push('/profile');}}" class="dropdown-item">
                     <User :size="20" />
                     <span>Profile</span>
-                </button>
-                <button @click="closeMenu" class="dropdown-item">
-                    <Settings :size="20" />
-                    <span>Settings</span>
                 </button>
                 <button @click="closeMenu" class="dropdown-item">
                     <HelpCircle :size="20" />
