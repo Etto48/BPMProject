@@ -1,49 +1,19 @@
 <script setup lang="ts">
 import type { DisplayableRisk } from '@/types';
 import { computed } from 'vue';
+import RiskInfoSection from './RiskInfoSection.vue';
 
 const props = defineProps<{
     risk: DisplayableRisk | null
 }>();
 
 const hasRisk = computed(() => props.risk !== null);
-
-const riskScore = computed(() => {
-    if (!props.risk || props.risk.impact === undefined || props.risk.probability === undefined) {
-        return null;
-    }
-    return props.risk.impact * props.risk.probability;
-});
 </script>
 
 <template>
     <div class="flex-column detail-wrapper">
-        <div v-if="hasRisk && risk" class="detail-container card">
-            <div class="risk-header">
-                <h3 class="risk-title">{{ risk.title }}</h3>
-                <span class="risk-badge" :class="risk.kind === 'threat' ? 'threat-badge' : 'opportunity-badge'">
-                    {{ risk.kind === 'threat' ? 'Threat' : 'Opportunity' }}
-                </span>
-            </div>
-            
-            <div class="risk-description">
-                <p>{{ risk.description }}</p>
-            </div>
-
-            <div v-if="risk.impact !== undefined && risk.probability !== undefined" class="risk-scores">
-                <div class="score-item">
-                    <label>Impact</label>
-                    <span class="score-value">{{ risk.impact }}/10</span>
-                </div>
-                <div class="score-item">
-                    <label>Probability</label>
-                    <span class="score-value">{{ risk.probability }}/10</span>
-                </div>
-                <div class="score-item">
-                    <label>Risk Score</label>
-                    <span class="score-value">{{ riskScore }}%</span>
-                </div>
-            </div>
+        <div v-if="hasRisk && risk" class="detail-container card" :class="risk.kind">
+            <RiskInfoSection :risk="risk" />
 
             <div class="plan-section">
                 <h4 class="plan-title">Contingency Plan</h4>

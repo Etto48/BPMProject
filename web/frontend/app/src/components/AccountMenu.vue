@@ -48,7 +48,7 @@ onUnmounted(() => {
     <div v-if="!isLoading && currentUser" class="account-menu-container" ref="menuRef">
         <div class="account-button" @click="toggleMenu">
             <img alt="Account Icon" src="@/assets/account-icon.svg" width="32" height="32" />
-            <span>{{ accountName }}</span>
+            <span class="account-name">{{ accountName }}</span>
             <ChevronDown :class="{ rotated: isMenuOpen }" />
         </div>
         <Transition name="backdrop">
@@ -89,6 +89,7 @@ onUnmounted(() => {
 .account-button {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 0.5rem;
     cursor: pointer;
     border: 2px solid var(--color-border);
@@ -96,6 +97,12 @@ onUnmounted(() => {
     padding: 0.5rem 1rem;
     transition: background-color 0.2s, border-radius 0.2s;
     height: 100%;
+    width: 200px;
+}
+
+.account-name {
+    text-align: start;
+    margin-right: auto;
 }
 
 .account-menu-container:has(.dropdown-menu) .account-button {
@@ -171,6 +178,7 @@ onUnmounted(() => {
 @media (max-width: 768px) {
     .account-button {
         padding: 0.5rem;
+        width: unset;
     }
 
     .account-button span {

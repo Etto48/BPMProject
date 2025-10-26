@@ -109,6 +109,16 @@
     color: var(--color-text);
 }
 
+.opportunity .risk-score-active {
+    font-weight: 700;
+    color: var(--color-opportunity);
+}
+
+.threat .risk-score-active {
+    font-weight: 700;
+    color: var(--color-threat);
+}
+
 /* Responsive styles */
 @media (max-width: 768px) {
     .detail-wrapper,

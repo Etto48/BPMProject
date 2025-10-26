@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import type { TrackedManagedRisk } from '@/types';
+import { RiskKind } from '@/types';
 import { computed } from 'vue';
 import { Sparkles } from 'lucide-vue-next';
+import RiskInfoSection from './RiskInfoSection.vue';
 
 const props = defineProps<{
     risks: Array<TrackedManagedRisk>
@@ -12,7 +14,7 @@ const props = defineProps<{
 const currentRisk = computed(() => {
     return props.risks[props.index] || {
         id: 0,
-        kind: 'threat',
+        kind: RiskKind.Threat,
         title: '',
         description: '',
         impact: 0,
@@ -46,7 +48,7 @@ defineEmits<{
         </defs>
     </svg>
     <div class="flex-column preview-wrapper">
-        <div class="preview-container card">
+        <div class="preview-container card" :class="currentRisk.kind">
             <!-- Loading Overlay -->
             <Transition name="fade">
                 <div v-if="isLoading" class="loading-overlay">
@@ -70,31 +72,7 @@ defineEmits<{
                 </div>
             </div>
             
-            <div class="risk-header">
-                <h3 class="risk-title">{{ currentRisk.title }}</h3>
-                <span class="risk-badge" :class="currentRisk.kind === 'threat' ? 'threat-badge' : 'opportunity-badge'">
-                    {{ currentRisk.kind === 'threat' ? 'Threat' : 'Opportunity' }}
-                </span>
-            </div>
-            
-            <div class="risk-description">
-                <p>{{ currentRisk.description }}</p>
-            </div>
-
-            <div class="risk-scores">
-                <div class="score-item">
-                    <label>Impact</label>
-                    <span class="score-value">{{ currentRisk.impact }}/10</span>
-                </div>
-                <div class="score-item">
-                    <label>Probability</label>
-                    <span class="score-value">{{ currentRisk.probability }}/10</span>
-                </div>
-                <div class="score-item">
-                    <label>Risk Score</label>
-                    <span class="score-value">{{ currentRisk.impact * currentRisk.probability }}%</span>
-                </div>
-            </div>
+            <RiskInfoSection :risk="currentRisk" />
 
             <div class="input-group">
                 <label for="contingency">Contingency Plan</label>

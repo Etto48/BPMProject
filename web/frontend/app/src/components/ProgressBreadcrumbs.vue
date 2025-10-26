@@ -206,8 +206,8 @@ onUnmounted(() => {
     display: none;
 }
 
-/* Mobile view (max-width: 768px) */
-@media (max-width: 768px) {
+/* Mobile and tablet view (max-width: 1024px) */
+@media (max-width: 1024px) {
     .progress-nav-container {
         margin: 0 1rem;
         position: relative;
