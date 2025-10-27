@@ -26,6 +26,14 @@ export type UserData = {
 export type UserResponse = {
   id: number
   username: string
+  companyDescription: string
+}
+
+export type UserUpdateData = {
+  username: string
+  password?: string
+  newPassword?: string
+  companyDescription: string
 }
 
 export type Project = {

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import { ChevronDown, LogOut, User, HelpCircle } from 'lucide-vue-next';
 import { useCurrentUser } from '@/composables/useCurrentUser';
+import defaultAccountIcon from '@/assets/account-icon.svg';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
@@ -9,6 +10,8 @@ const { currentUser, isLoading, clearUser } = useCurrentUser();
 const accountName = computed(() => currentUser.value?.username || '');
 const isMenuOpen = ref(false);
 const menuRef = ref<HTMLElement | null>(null);
+const accountIcon = ref(defaultAccountIcon);
+
 
 function logout() {
     fetch('/api/logout', {
@@ -42,12 +45,38 @@ onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside);
 });
 
+function updateImage() {
+    fetch('/api/me/picture', {
+        method: 'GET',
+        credentials: 'include',
+    }).then((response) => {
+        if (response.ok) {
+            // Append a timestamp to avoid caching issues
+            return response.blob()
+        } else {
+            throw new Error('Failed to fetch profile picture');
+        }
+    }).then((blob) => {
+        const url = URL.createObjectURL(blob);
+        accountIcon.value = url;
+    }).catch(() => {
+        accountIcon.value = defaultAccountIcon;
+    });
+}
+
+watch(currentUser, (newUser) => {
+    if (!newUser) {
+        updateImage();
+    }
+})
+
+updateImage();
 </script>
 
 <template>
     <div v-if="!isLoading && currentUser" class="account-menu-container" ref="menuRef">
         <div class="account-button" @click="toggleMenu">
-            <img alt="Account Icon" src="@/assets/account-icon.svg" width="32" height="32" />
+            <img alt="Account Icon" :src="accountIcon" width="32" height="32" />
             <span class="account-name">{{ accountName }}</span>
             <ChevronDown :class="{ rotated: isMenuOpen }" />
         </div>

@@ -11,7 +11,10 @@ class UserData(BaseModel):
     password: str
     companyDescription: str = ""
 
-class UserUpdateData(UserData):
+class UserUpdateData(BaseModel):
+    username: Optional[str] = None
+    password: Optional[str] = None
+    companyDescription: Optional[str] = None
     newPassword: Optional[str] = None
 
 class UserInDB(BaseModel):

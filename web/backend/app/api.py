@@ -15,6 +15,7 @@ from llm import LLM # type: ignore
 logger = logging.getLogger(__name__)
 
 FILE_PATH = Path(os.getenv("BACKEND_FILE_PATH", "/data"))
+ASSETS_PATH = Path("/app/assets")
 
 api = fastapi.APIRouter(prefix="/api")
 
@@ -168,10 +169,35 @@ async def upload_profile_picture(
         logger.error(f"Error saving profile picture for user {user_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to upload profile picture")
     
+@api.delete("/me/picture")
+async def delete_profile_picture(request: Request):
+    """Delete profile picture for current user"""
+    if "user_id" not in request.session:
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    user_id = request.session["user_id"]
+
+    file_basename = f"user_{user_id}"
+    deleted = False
+    # Search for existing photo with any supported extension
+    for ext in ['.jpg', '.png', '.webp', '.gif']:
+        file_path = FILE_PATH / f"{file_basename}{ext}"
+        if file_path.exists():
+            file_path.unlink()
+            deleted = True
+            break
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="No profile picture to delete")
+
+    return {"message": "Profile picture deleted successfully"}
+
 @api.get("/me/picture", responses={
     200: {"description": "Photo file", "content": {"image/*": {}}},
     401: {"description": "Not logged in"},
-    404: {"description": "Photo not found"}
+    404: {"description": "Profile picture not found"}
 })
 async def get_profile_picture(request: Request):
     """Get profile picture for current user"""
@@ -183,13 +209,18 @@ async def get_profile_picture(request: Request):
     user_id = request.session["user_id"]
 
     file_basename = f"user_{user_id}"
+    ret = None
     # Search for existing photo with any supported extension
     for ext in ['.jpg', '.png', '.webp', '.gif']:
         file_path = FILE_PATH / f"{file_basename}{ext}"
         if file_path.exists():
-            return fastapi.responses.FileResponse(file_path, media_type=f"image/{ext.lstrip('.')}")
-    
-    raise HTTPException(status_code=404, detail="Profile picture not found")
+            ret = file_path
+            break
+
+    if ret is None:
+        raise HTTPException(status_code=404, detail="Profile picture not found")
+
+    return fastapi.responses.FileResponse(ret, media_type=f"image/{ret.suffix.lstrip('.')}")
 
 @api.post("/me", response_model=UserResponse, responses={
     200: {"description": "User profile updated successfully"},
@@ -216,22 +247,35 @@ async def update_profile(
             detail="Not logged in"
         )
     
-    # Check password
-    if not verify_password(user_data.password, old_user_data.passwordHash):
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid credentials"
-        )
-    new_password_hash = old_user_data.passwordHash
-    if user_data.newPassword:
+    new_username = old_user_data.username
+    if user_data.username is not None:
+        new_username = user_data.username
+
+    new_company_description = old_user_data.companyDescription
+    if user_data.companyDescription is not None:
+        new_company_description = user_data.companyDescription
+
+    if user_data.newPassword is not None:
+        if user_data.password is None:
+            raise HTTPException(
+                status_code=401,
+                detail="Current password required to set a new password"
+            )
+        if not verify_password(user_data.password, old_user_data.passwordHash):
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid credentials"
+            )
         new_password_hash = hash_password(user_data.newPassword)
+    else:
+        new_password_hash = old_user_data.passwordHash
 
     try:
         updated_user = await db.update_user(
             user_id,
-            user_data.username,
+            new_username,
             new_password_hash,
-            user_data.companyDescription
+            new_company_description
         )
         return UserResponse(id=updated_user.id, username=updated_user.username, companyDescription=updated_user.companyDescription)
     except Exception as e:

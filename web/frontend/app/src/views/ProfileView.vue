@@ -1,100 +1,256 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { Pencil } from 'lucide-vue-next';
+import { ref, computed, watch, onMounted } from 'vue';
+import { Pencil, Trash2 } from 'lucide-vue-next';
 import { useCurrentUser } from '@/composables/useCurrentUser';
 import accountIcon from '@/assets/account-icon.svg';
+import type { UserUpdateData } from '@/types';
 
-const { currentUser } = useCurrentUser();
+const { currentUser, fetchUser } = useCurrentUser();
 
 // Local editable state
 const editableUsername = ref('');
 const companyDescription = ref('');
 const imageFile = ref<File | null>(null);
 const imagePreview = ref<string>('');
+const imageRemoveRequested = ref(false);
 const currentPassword = ref('');
 const newPassword = ref('');
 const confirmPassword = ref('');
 const isEditing = ref(false);
 
+// Snapshot of original values to detect unsaved changes
+const originalUser = ref({
+    username: '',
+    companyDescription: '',
+    imagePreview: '',
+});
+
 // Initialize editable username when currentUser is available
 const initializeForm = () => {
-  if (currentUser.value) {
-    editableUsername.value = currentUser.value.username;
-    // Set default profile image
-    imagePreview.value = accountIcon;
-  }
+    if (currentUser.value) {
+        editableUsername.value = currentUser.value.username;
+        companyDescription.value = currentUser.value.companyDescription;
+        // Set default profile image
+        imagePreview.value = accountIcon;
+        originalUser.value.imagePreview = imagePreview.value;
+        fetch('/api/me/picture', {
+            method: 'GET',
+            credentials: 'include',
+        }).then((response) => {
+            if (response.ok) {
+                return response.blob();
+            } else {
+                throw new Error('No profile picture');
+            }
+        }).then((blob) => {
+            imagePreview.value = URL.createObjectURL(blob);
+            originalUser.value.imagePreview = imagePreview.value;
+        }).catch(() => {
+            // Use default icon if no picture
+            imagePreview.value = accountIcon;
+        });
+        imageRemoveRequested.value = false;
+
+        // Save original snapshot for dirty-checking
+        originalUser.value.username = editableUsername.value;
+        originalUser.value.companyDescription = companyDescription.value;
+    }
 };
 
 // Initialize form when component mounts or user changes
 if (currentUser.value) {
-  initializeForm();
+    initializeForm();
 }
+
+// Also re-initialize when the current user changes
+watch(currentUser, (newVal) => {
+    if (newVal) initializeForm();
+});
+
+onMounted(() => {
+    if (currentUser.value) initializeForm();
+});
 
 // Computed property to check if passwords are valid
 const isPasswordValid = computed(() => {
-  if (!newPassword.value) return true; // No password change
-  return newPassword.value === confirmPassword.value && newPassword.value.length >= 8;
+    if (!newPassword.value) return true; // No password change
+    return newPassword.value === confirmPassword.value;
+});
+
+// Whether the current preview represents the default image
+const isDefaultImage = computed(() => {
+    // treat either the bundled svg or the API endpoint as the default
+    return (
+        imagePreview.value === accountIcon ||
+        imagePreview.value === '/api/me/picture' ||
+        !imagePreview.value
+    );
 });
 
 // Computed property to check if save button should be enabled
 const canSave = computed(() => {
-  if (!editableUsername.value.trim()) return false;
-  if (newPassword.value && !isPasswordValid.value) return false;
-  return true;
+    // Require username and password validity when changing password
+    if (!editableUsername.value.trim()) return false;
+    if (newPassword.value && !isPasswordValid.value) return false;
+    // Only allow save when something changed
+    return isDirty.value;
+});
+
+// Dirty-check: compare current editable values against original snapshot
+const isDirty = computed(() => {
+    if (!originalUser.value) return false;
+    if (editableUsername.value !== originalUser.value.username) return true;
+    if (companyDescription.value !== originalUser.value.companyDescription) return true;
+    if (imageFile.value) return true; // new image selected
+    if (imageRemoveRequested.value) return true; // removal requested
+    if (imagePreview.value !== originalUser.value.imagePreview) return true;
+    if (newPassword.value) return true; // password change requested
+    return false;
 });
 
 // Handle image file selection
 const handleImageSelect = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  
-  if (file) {
-    imageFile.value = file;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      imagePreview.value = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-  }
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    
+    if (file) {
+        imageFile.value = file;
+        // If user selects a new file, they no longer request removal
+        imageRemoveRequested.value = false;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+        imagePreview.value = e.target?.result as string;
+        };
+        reader.readAsDataURL(file);
+    }
 };
 
 // Trigger file input click
 const triggerImageUpload = () => {
-  const fileInput = document.getElementById('image-upload') as HTMLInputElement;
-  fileInput?.click();
+    const fileInput = document.getElementById('image-upload') as HTMLInputElement;
+    fileInput?.click();
+};
+
+// Mark profile picture for removal — actual DELETE happens on Save
+const removeProfilePicture = () => {
+    // If there's a selected file, clear it (user intends to remove instead)
+    imageFile.value = null;
+    imageRemoveRequested.value = true;
+    // Show client-side default so user sees the change
+    imagePreview.value = accountIcon;
+    console.log('Profile picture removal requested (will be sent on save)');
 };
 
 // Placeholder function for updating profile
 const handleSave = async () => {
-  if (!canSave.value) return;
+    if (!canSave.value) return;
   
-  // TODO: Implement API call to update user profile
-  console.log('Saving user profile...');
-  console.log('Username:', editableUsername.value);
-  console.log('Company Description:', companyDescription.value);
-  console.log('Image file:', imageFile.value);
-  console.log('Password change requested:', !!newPassword.value);
-  
-  // Simulate API call
-  alert('Profile update functionality will be implemented when API is ready');
-  
-  // Reset password fields after save
-  currentPassword.value = '';
-  newPassword.value = '';
-  confirmPassword.value = '';
-  isEditing.value = false;
+    // TODO: Implement API call to update user profile
+    console.log('Saving user profile...');
+    console.log('Username:', editableUsername.value);
+    console.log('Company Description:', companyDescription.value);
+    console.log('Image file:', imageFile.value);
+    console.log('Password change requested:', !!newPassword.value);
+    
+    // If user requested picture removal, perform DELETE on save
+    if (imageRemoveRequested.value) {
+        try {
+            await fetch('/api/me/picture', {
+                method: 'DELETE',
+                credentials: 'include',
+            });
+            console.log('Profile picture removed on save');
+        } catch (error) {
+            console.error('Error removing profile picture on save:', error);
+        }
+    }
+
+    if (imageFile.value) {
+        const formData = new FormData();
+        formData.append("picture", imageFile.value);
+        fetch("/api/me/picture", {
+            method: "POST",
+            credentials: "include",
+            body: formData
+        }).then(() => {
+            console.log("Profile picture updated");
+        }).catch((error) => {
+            console.error("Error updating profile picture:", error);
+        });
+    }
+
+    const updateData: UserUpdateData = {
+        username: editableUsername.value,
+        companyDescription: companyDescription.value,
+        password: currentPassword.value ? currentPassword.value : undefined,
+        newPassword: newPassword.value ? newPassword.value : undefined,
+    }
+    fetch("/api/me", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updateData),
+    }).then(() => {
+        console.log("User profile updated");
+        fetchUser();
+    }).catch((error) => {
+        console.error("Error updating user profile:", error);
+    });
+
+    // On success: update original snapshot so form is considered saved
+    originalUser.value.username = editableUsername.value;
+    originalUser.value.companyDescription = companyDescription.value;
+    originalUser.value.imagePreview = imagePreview.value;
+
+    // Reset temporary fields
+    currentPassword.value = '';
+    newPassword.value = '';
+    confirmPassword.value = '';
+    imageFile.value = null;
+    imageRemoveRequested.value = false;
+    isEditing.value = false;
+};
+
+// Allow discarding local edits and restoring original snapshot
+const discardChanges = () => {
+    editableUsername.value = originalUser.value.username;
+    companyDescription.value = originalUser.value.companyDescription;
+    imagePreview.value = originalUser.value.imagePreview;
+    imageFile.value = null;
+    imageRemoveRequested.value = false;
+    currentPassword.value = '';
+    newPassword.value = '';
+    confirmPassword.value = '';
 };
 </script>
 
 <template>
     <main>
         <h2>User Profile</h2>
+        <!-- Unsaved changes indicator -->
+        <div v-if="isDirty" class="unsaved-indicator card gradient-background-light" role="status">
+            <span class="unsaved-text">You have unsaved changes</span>
+            <div class="unsaved-actions">
+                <button type="button" class="gradient-button" @click="handleSave" :disabled="!canSave">
+                    Save
+                </button>
+                <button type="button" class="secondary-button" @click="discardChanges">
+                    Discard
+                </button>
+            </div>
+        </div>
+
         <div v-if="currentUser" class="profile-container">
             <!-- Profile Image Section -->
             <div class="profile-image-section">
                 <div class="image-container">
                     <img :src="imagePreview" alt="Profile" class="profile-image" />
-                    <button class="edit-image-btn" @click="triggerImageUpload" type="button">
+                    <button v-if="!isDefaultImage" class="edit-image-btn remove-image-btn" @click="removeProfilePicture" type="button" aria-label="Remove profile picture">
+                        <Trash2 :size="18" />
+                    </button>
+                    <button class="edit-image-btn" @click="triggerImageUpload" type="button" aria-label="Edit profile picture">
                         <Pencil :size="20" />
                     </button>
                     <input 
@@ -167,9 +323,6 @@ const handleSave = async () => {
                                     placeholder="Leave blank to keep current"
                                 />
                             </div>
-                            <small v-if="newPassword && newPassword.length < 8" class="error-text">
-                                Password must be at least 8 characters
-                            </small>
                         </div>
 
                         <div class="form-group">
@@ -186,18 +339,11 @@ const handleSave = async () => {
                             <small v-if="newPassword && confirmPassword && newPassword !== confirmPassword" class="error-text">
                                 Passwords do not match
                             </small>
+                            <small v-else-if="newPassword && confirmPassword === ''" class="error-text">
+                                Please confirm your new password
+                            </small>
                         </div>
                     </div>
-                </div>
-                <!-- Save Button: moved up to reduce wasted space -->
-                <div class="form-actions">
-                    <button 
-                        type="submit" 
-                        class="gradient-button"
-                        :disabled="!canSave"
-                    >
-                        Save Changes
-                    </button>
                 </div>
             </form>
         </div>
@@ -221,6 +367,38 @@ h2 {
     margin-bottom: 1rem;
     color: var(--color-heading);
     font-size: 1.5rem;
+}
+
+/* Unsaved changes indicator - use site vars and utility classes */
+.unsaved-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-background-soft);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    border-radius: 8px;
+    margin: 0 0 1rem 0;
+}
+.unsaved-text {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-text-opaque);
+}
+.unsaved-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+/* make utility buttons fit the indicator */
+.unsaved-actions .gradient-button,
+.unsaved-actions .secondary-button {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.9rem;
+}
+.unsaved-indicator.card {
+    padding: 0.5rem 0.75rem;
 }
 
 .profile-container {
@@ -262,6 +440,24 @@ h2 {
     position: absolute;
     bottom: 5px;
     right: 5px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--color-background);
+    border: 2px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+/* Remove button - same style as edit but positioned bottom-left */
+.remove-image-btn {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
     width: 36px;
     height: 36px;
     border-radius: 50%;
