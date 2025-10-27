@@ -9,7 +9,7 @@ class LLM:
     async def load_model(self):
         pass
 
-    async def generate_risks(self, project: Project):
+    async def generate_risks(self, company_description: str, project: Project):
         return [
             Risk(
                 title="Technological Advancement",
@@ -38,7 +38,7 @@ class LLM:
             )
         ]
 
-    async def generate_risk_scores(self, project: Project, risks: list[TrackedRisk]):
+    async def generate_risk_scores(self, company_description: str, project: Project, risks: list[TrackedRisk]):
         return [
             TrackedScoredRisk(
                 id=risk.id,
@@ -50,7 +50,7 @@ class LLM:
             ) for risk in risks
         ]
     
-    async def generate_risk_mitigation_plan(self, project: Project, risks: list[TrackedScoredRisk]):
+    async def generate_risk_mitigation_plan(self, company_description: str, project: Project, risks: list[TrackedScoredRisk]):
         risks_with_plans: list[TrackedManagedRisk] = []
         for risk in risks:
             risks_with_plans.append(
