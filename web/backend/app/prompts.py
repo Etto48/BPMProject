@@ -1,6 +1,8 @@
 GENERATE_RISKS = """\
 Given the title and description of a project, generate an exhaustive list of potential risks
 associated with the project.
+A risk is defined as any uncertain event or condition that, if it occurs, could have a positive
+or negative effect on the project's objectives.
 Each risk should have a kind: either 'threat' for risks that could negatively impact the
 project, or 'opportunity' for risks that could positively impact the project.
 For each risk, provide a concise title (maximum 4-5 words) and a description explaining what

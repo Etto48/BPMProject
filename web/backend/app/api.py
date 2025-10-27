@@ -423,7 +423,8 @@ async def list_projects(
 async def generate_project_risks(
     request: Request,
     project_id: int,
-    db: ProjectRepository = Depends(get_project_repository),
+    user_db: UserRepository = Depends(get_user_repository),
+    project_db: ProjectRepository = Depends(get_project_repository),
     llm: LLM = Depends(get_llm_client),
 ) -> list[Risk]:
     if "user_id" not in request.session:
@@ -432,15 +433,16 @@ async def generate_project_risks(
             detail="Not logged in"
         )
     user_id = request.session["user_id"]
+    user_in_db: UserInDB = await user_db.get_user_by_id(user_id)
 
-    project = await db.get_project_by_id(project_id, user_id)
+    project = await project_db.get_project_by_id(project_id, user_id)
     if project is None:
         raise HTTPException(
             status_code=404,
             detail="Project not found"
         )
 
-    generated_risks = await llm.generate_risks(project)
+    generated_risks = await llm.generate_risks(user_in_db.companyDescription, project)
 
     return generated_risks
 
@@ -503,7 +505,8 @@ async def add_project_risk(
 async def generate_risk_scores(
     request: Request,
     project_id: int,
-    db: ProjectRepository = Depends(get_project_repository),
+    user_db: UserRepository = Depends(get_user_repository),
+    project_db: ProjectRepository = Depends(get_project_repository),
     llm: LLM = Depends(get_llm_client),
 ) -> list[TrackedScoredRisk]:
     if "user_id" not in request.session:
@@ -512,15 +515,16 @@ async def generate_risk_scores(
             detail="Not logged in"
         )
     user_id = request.session["user_id"]
+    user_in_db: UserInDB = await user_db.get_user_by_id(user_id)
 
-    project = await db.get_project_by_id(project_id, user_id)
+    project = await project_db.get_project_by_id(project_id, user_id)
     if project is None:
         raise HTTPException(
             status_code=404,
             detail="Project not found"
         )
 
-    risks = await db.get_project_risks(project_id, user_id)
+    risks = await project_db.get_project_risks(project_id, user_id)
     if not risks:
         raise HTTPException(
             status_code=404,
@@ -529,7 +533,7 @@ async def generate_risk_scores(
     
     risks = list(map(lambda r: TrackedRisk(**r.model_dump()), risks))
 
-    scored_risks = await llm.generate_risk_scores(project, risks)
+    scored_risks = await llm.generate_risk_scores(user_in_db.companyDescription, project, risks)
 
     return scored_risks
 
@@ -567,7 +571,8 @@ async def add_risk_scores(
 async def generate_risk_plans(
     request: Request,
     project_id: int,
-    db: ProjectRepository = Depends(get_project_repository),
+    user_db: UserRepository = Depends(get_user_repository),
+    project_db: ProjectRepository = Depends(get_project_repository),
     llm: LLM = Depends(get_llm_client),
 ) -> list[TrackedManagedRisk]:
     if "user_id" not in request.session:
@@ -576,15 +581,16 @@ async def generate_risk_plans(
             detail="Not logged in"
         )
     user_id = request.session["user_id"]
+    user_in_db: UserInDB = await user_db.get_user_by_id(user_id)
 
-    project = await db.get_project_by_id(project_id, user_id)
+    project = await project_db.get_project_by_id(project_id, user_id)
     if project is None:
         raise HTTPException(
             status_code=404,
             detail="Project not found"
         )
 
-    risks = await db.get_project_risks(project_id, user_id)
+    risks = await project_db.get_project_risks(project_id, user_id)
     if not risks:
         raise HTTPException(
             status_code=404,
@@ -613,7 +619,7 @@ async def generate_risk_plans(
 
     significant_risks = list(map(lambda r: TrackedScoredRisk(**r.model_dump()), significant_risks))
 
-    managed_risks = await llm.generate_risk_mitigation_plan(project, significant_risks)
+    managed_risks = await llm.generate_risk_mitigation_plan(user_in_db.companyDescription, project, significant_risks)
 
     return managed_risks + [TrackedManagedRisk(**r.model_dump(), contingency=None, fallback=None) for r in insignificant_risks]
 
