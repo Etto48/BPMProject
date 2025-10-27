@@ -3,6 +3,8 @@ from typing import Optional
 import fastapi
 from pathlib import Path
 import logging
+from io import BytesIO
+import json
 from fastapi import HTTPException, Depends, Request, UploadFile
 from fastapi.params import File
 from fastapi.responses import JSONResponse
@@ -642,3 +644,41 @@ async def add_risk_plans(
             detail="Failed to add risk plans"
         )
     return {"message": "Risk plans added", "risks": updated_risks}
+
+@api.get("/projects/{project_id}/download")
+async def download_project_file(
+    request: Request,
+    project_id: int,
+    db: ProjectRepository = Depends(get_project_repository),
+) :
+    if "user_id" not in request.session:
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    user_id = request.session["user_id"]
+
+    project : Optional[ProjectInDB] = await db.get_project_by_id(project_id, user_id)
+    if project is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found"
+        )
+
+    risks : list[RiskInDB] = await db.get_project_risks(project_id, user_id)
+    
+    # Generate project file json in memory
+    
+    project_dict = project.model_dump(exclude={'id'})
+    project_dict["risks"] = [risk.model_dump(exclude={'id'}) for risk in risks] if risks else []
+    project_json = json.dumps(project_dict, indent=2)
+    project_bytes = BytesIO(project_json.encode('utf-8'))
+
+    # return a json file
+    return fastapi.responses.StreamingResponse(
+        project_bytes,
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f"attachment; filename=project_{project_id}.json"
+        }
+    )
