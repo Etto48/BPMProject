@@ -1,15 +1,20 @@
+import os
 from typing import Optional
 import fastapi
+from pathlib import Path
 import logging
-from fastapi import HTTPException, Depends, Request
+from fastapi import HTTPException, Depends, Request, UploadFile
+from fastapi.params import File
 from fastapi.responses import JSONResponse
 from database import UserRepository, ProjectRepository
 from auth import hash_password, verify_password
-from models import Project, ProjectInDB, QualitativeAnalysisData, Risk, RiskInDB, TrackedRisk, TrackedScoredRisk, TrackedManagedRisk, UserData, UserResponse, UserInDB
+from models import Project, ProjectInDB, QualitativeAnalysisData, Risk, RiskInDB, TrackedRisk, TrackedScoredRisk, TrackedManagedRisk, UserData, UserResponse, UserInDB, UserUpdateData
 
 from llm import LLM # type: ignore
 
 logger = logging.getLogger(__name__)
+
+FILE_PATH = Path(os.getenv("BACKEND_FILE_PATH", "/data"))
 
 api = fastapi.APIRouter(prefix="/api")
 
@@ -116,6 +121,125 @@ async def me(current_user: UserResponse = Depends(get_current_user)):
     """Get current user information"""
     return current_user
 
+@api.post("/me/picture")
+async def upload_profile_picture(
+    request: Request,
+    picture: UploadFile = File(..., description="The profile picture file to upload")):
+    """Upload profile picture for current user"""
+    if "user_id" not in request.session:
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    user_id = request.session["user_id"]
+
+    # Validate file type
+    if not picture.content_type or not picture.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    # Get file extension from content type
+    content_type_to_ext = {
+        'image/jpeg': '.jpg',
+        'image/jpg': '.jpg',
+        'image/png': '.png',
+        'image/webp': '.webp',
+        'image/gif': '.gif'
+    }
+
+    file_ext = content_type_to_ext.get(picture.content_type)
+    if not file_ext:
+        raise HTTPException(status_code=400, detail="Unsupported image format")
+    
+    file_basename = f"user_{user_id}"
+    file_name = f"{file_basename}{file_ext}"
+    file_path = FILE_PATH / file_name
+
+    try:
+        # Delete old photo if exists
+        for existing_file in FILE_PATH.glob(f"{file_basename}.*"):
+            existing_file.unlink()
+        
+        with open(file_path, "wb") as buffer:
+            buffer.write(await picture.read())
+
+        return {"message": "Profile picture uploaded successfully"}
+    
+    except Exception as e:
+        logger.error(f"Error saving profile picture for user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload profile picture")
+    
+@api.get("/me/picture", responses={
+    200: {"description": "Photo file", "content": {"image/*": {}}},
+    401: {"description": "Not logged in"},
+    404: {"description": "Photo not found"}
+})
+async def get_profile_picture(request: Request):
+    """Get profile picture for current user"""
+    if "user_id" not in request.session:
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    user_id = request.session["user_id"]
+
+    file_basename = f"user_{user_id}"
+    # Search for existing photo with any supported extension
+    for ext in ['.jpg', '.png', '.webp', '.gif']:
+        file_path = FILE_PATH / f"{file_basename}{ext}"
+        if file_path.exists():
+            return fastapi.responses.FileResponse(file_path, media_type=f"image/{ext.lstrip('.')}")
+    
+    raise HTTPException(status_code=404, detail="Profile picture not found")
+
+@api.post("/me", response_model=UserResponse, responses={
+    200: {"description": "User profile updated successfully"},
+    401: {"description": "Not logged in or invalid credentials"},
+    409: {"description": "Username already exists"}
+})
+async def update_profile(
+    request: Request,
+    user_data: UserUpdateData,
+    db: UserRepository = Depends(get_user_repository)
+):
+    """Update current user profile"""
+    if "user_id" not in request.session:
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    user_id = request.session["user_id"]
+    old_user_data = await db.get_user_by_id(user_id)
+    if old_user_data is None:
+        request.session.clear()
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    
+    # Check password
+    if not verify_password(user_data.password, old_user_data.passwordHash):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials"
+        )
+    new_password_hash = old_user_data.passwordHash
+    if user_data.newPassword:
+        new_password_hash = hash_password(user_data.newPassword)
+
+    try:
+        updated_user = await db.update_user(
+            user_id,
+            user_data.username,
+            new_password_hash,
+            user_data.companyDescription
+        )
+        return UserResponse(id=updated_user.id, username=updated_user.username, companyDescription=updated_user.companyDescription)
+    except Exception as e:
+        logger.error(f"Error updating user {user_id}: {e}")
+        raise HTTPException(
+            status_code=409,
+            detail="Username already exists"
+        )
 
 @api.get("/logout")
 def logout(request: Request) -> JSONResponse:

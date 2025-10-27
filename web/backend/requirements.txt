@@ -1,5 +1,6 @@
 uvicorn
 fastapi
+python-multipart
 openai
 pydantic
 colorlog

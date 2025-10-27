@@ -4,15 +4,21 @@ from typing import Optional, Literal
 class UserResponse(BaseModel):
     id: int
     username: str
+    companyDescription: str
 
 class UserData(BaseModel):
     username: str
     password: str
+    companyDescription: str = ""
+
+class UserUpdateData(UserData):
+    newPassword: Optional[str] = None
 
 class UserInDB(BaseModel):
     id: int
     username: str
     passwordHash: str
+    companyDescription: str
 
 class Project(BaseModel):
     title: str

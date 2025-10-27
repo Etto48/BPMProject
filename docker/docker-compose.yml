@@ -24,6 +24,7 @@ services:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     volumes:
       - ../web/backend/app:/app:ro
+      - bpm-backend-data:${BACKEND_FILE_PATH}
     depends_on:
       llm:
         condition: service_started
@@ -87,4 +88,5 @@ services:
       - backend
 
 volumes:
+  bpm-backend-data:
   bpm-db-data:
