@@ -6,18 +6,18 @@ class UserRepository:
     def __init__(self, connection: psycopg.AsyncConnection):
         self.conn = connection
 
-    async def create_user(self, username: str, passwordHash: str) -> Optional[UserResponse]:
+    async def create_user(self, username: str, passwordHash: str) -> Optional[UserInDB]:
         """Create a new user in the database"""
         try:
             async with self.conn.transaction():
                 async with self.conn.cursor() as cursor:
                     await cursor.execute(
-                        "INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING id, username",
+                        "INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING id, username, company_description",
                         (username, passwordHash)
                     )
                     row = await cursor.fetchone()
                     if row:
-                        return UserResponse(id=row[0], username=row[1])
+                        return UserInDB(id=row[0], username=row[1], passwordHash=passwordHash, companyDescription=row[2])
                     return None
         except psycopg.IntegrityError:
             # Username already exists
@@ -27,25 +27,44 @@ class UserRepository:
         """Get user by username, returns (id, username, password_hash)"""
         async with self.conn.cursor() as cursor:
             await cursor.execute(
-                "SELECT id, username, password_hash FROM users WHERE username = %s",
+                "SELECT id, username, password_hash, company_description FROM users WHERE username = %s",
                 (username,)
             )
             row = await cursor.fetchone()
             if row:
-                return UserInDB(id=row[0], username=row[1], passwordHash=row[2])
+                return UserInDB(id=row[0], username=row[1], passwordHash=row[2], companyDescription=row[3])
             return None
 
-    async def get_user_by_id(self, userId: int) -> Optional[UserResponse]:
+    async def get_user_by_id(self, userId: int) -> Optional[UserInDB]:
         """Get user by ID"""
         async with self.conn.cursor() as cursor:
             await cursor.execute(
-                "SELECT id, username FROM users WHERE id = %s",
+                "SELECT id, username, password_hash, company_description FROM users WHERE id = %s",
                 (userId,)
             )
             row = await cursor.fetchone()
             if row:
-                return UserResponse(id=row[0], username=row[1])
+                return UserInDB(id=row[0], username=row[1], passwordHash=row[2], companyDescription=row[3])
             return None
+        
+        
+    async def update_user(self, user_id, username, password_hash, company_description) -> UserInDB:
+        """Update user's information"""
+        company_description = company_description or ''
+        async with self.conn.cursor() as cursor:
+            await cursor.execute(
+                """
+                UPDATE users
+                SET username = %s,
+                    password_hash = %s,
+                    company_description = %s
+                WHERE id = %s
+                """,
+                (username, password_hash, company_description, user_id)
+            )
+            return UserInDB(id=user_id, username=username, passwordHash=password_hash, companyDescription=company_description)
+        
+    
         
 class ProjectRepository:
     def __init__(self, connection: psycopg.AsyncConnection):

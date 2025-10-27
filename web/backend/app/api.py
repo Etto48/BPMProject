@@ -49,7 +49,7 @@ async def get_current_user(request: Request, db: UserRepository = Depends(get_us
             detail="User not found"
         )
     
-    return user
+    return UserResponse(id=user.id, username=user.username, companyDescription=user.companyDescription)
 
 
 @api.post("/register", response_model=UserResponse)
@@ -72,7 +72,7 @@ async def register(request: Request, user_data: UserData, db: UserRepository = D
     request.session["username"] = user.username
     
     logger.info(f"User {user.username} registered successfully")
-    return user
+    return UserResponse(id=user.id, username=user.username, companyDescription=user.companyDescription)
 
 
 @api.post("/login")
