@@ -676,7 +676,7 @@ async def download_project_file(
     # Generate project file json in memory
     
     project_dict = project.model_dump(exclude={'id'})
-    project_dict["risks"] = [risk.model_dump(exclude={'id'}) for risk in risks] if risks else []
+    project_dict["risks"] = [risk.model_dump(exclude={'id','projectId'}) for risk in risks] if risks else []
     project_json = json.dumps(project_dict, indent=2)
     project_bytes = BytesIO(project_json.encode('utf-8'))
 

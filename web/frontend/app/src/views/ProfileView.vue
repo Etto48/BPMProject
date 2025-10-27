@@ -434,7 +434,7 @@ const handleDeleteAccount = async () => {
             <ConfirmModal
                 v-model:visible="showDeleteConfirm"
                 title="Delete account?"
-                :confirmDisabled="isDeleting || !deletePassword"
+                :confirm-disabled="isDeleting || !deletePassword"
                 confirmText="Delete"
                 cancelText="Cancel"
                 :error="deleteError"

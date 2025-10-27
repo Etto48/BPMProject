@@ -4,6 +4,7 @@ import ProjectAndRisksSidePanel from '@/components/ProjectAndRisksSidePanel.vue'
 import RiskDetailView from '@/components/RiskDetails.vue';
 import type { ProjectInDB, DisplayableRisk } from '@/types';
 import { ref, computed } from 'vue';
+import DownloadFloatingButton from '@/components/DownloadFloatingButton.vue';
 
 const route = useRoute();
 const projectId = Number(route.params.id);
@@ -75,6 +76,7 @@ fetchRisks();
             @project-updated="projectUpdated"
         />
         <RiskDetailView :risk="currentRisk" />
+        <DownloadFloatingButton :project-id="projectId" />
     </main>
 </template>
 
