@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
 import { Pencil, Trash2 } from 'lucide-vue-next';
+import ConfirmModal from '@/components/ConfirmModal.vue';
 import { useCurrentUser } from '@/composables/useCurrentUser';
 import accountIcon from '@/assets/account-icon.svg';
 import type { UserUpdateData } from '@/types';
+import router from '@/router';
 
 const { currentUser, fetchUser } = useCurrentUser();
 
@@ -17,6 +19,11 @@ const currentPassword = ref('');
 const newPassword = ref('');
 const confirmPassword = ref('');
 const isEditing = ref(false);
+// For account deletion
+const deletePassword = ref('');
+const deleteError = ref('');
+const isDeleting = ref(false);
+const showDeleteConfirm = ref(false);
 
 // Snapshot of original values to detect unsaved changes
 const originalUser = ref({
@@ -223,6 +230,51 @@ const discardChanges = () => {
     currentPassword.value = '';
     newPassword.value = '';
     confirmPassword.value = '';
+    // reset delete fields as well
+    deletePassword.value = '';
+    deleteError.value = '';
+};
+
+// Handle account deletion
+const handleDeleteAccount = async () => {
+    deleteError.value = '';
+    if (!deletePassword.value) {
+        deleteError.value = 'Please provide your password to delete your account.';
+        return;
+    }
+
+    // confirmation is handled by the modal; this function performs the deletion
+    isDeleting.value = true;
+    try {
+        const body = {
+            password: deletePassword.value,
+        };
+
+        const res = await fetch('/api/me', {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (res.ok) {
+            console.log(await res.json());
+            // close modal and update UI
+            showDeleteConfirm.value = false;
+            await fetchUser();
+            router.push('/login');
+        } else {
+            console.error('Delete account failed');
+            deleteError.value = 'Failed to delete account.';
+        }
+    } catch (err) {
+        deleteError.value = 'Network error while deleting account.';
+        console.error('Error deleting account:', err);
+    } finally {
+        isDeleting.value = false;
+    }
 };
 </script>
 
@@ -230,17 +282,19 @@ const discardChanges = () => {
     <main>
         <h2>User Profile</h2>
         <!-- Unsaved changes indicator -->
-        <div v-if="isDirty" class="unsaved-indicator card gradient-background-light" role="status">
-            <span class="unsaved-text">You have unsaved changes</span>
-            <div class="unsaved-actions">
-                <button type="button" class="gradient-button" @click="handleSave" :disabled="!canSave">
-                    Save
-                </button>
-                <button type="button" class="secondary-button" @click="discardChanges">
-                    Discard
-                </button>
+        <Transition name="dirty-notification">
+            <div v-if="isDirty" class="unsaved-indicator card gradient-background-light" role="status">
+                <span class="unsaved-text">You have unsaved changes</span>
+                <div class="unsaved-actions">
+                    <button type="button" class="gradient-button" @click="handleSave" :disabled="!canSave">
+                        Save
+                    </button>
+                    <button type="button" class="secondary-button" @click="discardChanges">
+                        Discard
+                    </button>
+                </div>
             </div>
-        </div>
+        </Transition>
 
         <div v-if="currentUser" class="profile-container">
             <!-- Profile Image Section -->
@@ -345,7 +399,49 @@ const discardChanges = () => {
                         </div>
                     </div>
                 </div>
+
+                <!-- Delete Account Section -->
+                <div class="danger-section">
+                    <h3>Delete Account</h3>
+                    <p class="danger-note">This action is permanent and will remove your account and data.</p>
+                    <div class="form-group">
+                        <label for="delete-password">Confirm with Password</label>
+                        <div class="input-wrapper input-gradient-border">
+                            <input
+                                type="password"
+                                id="delete-password"
+                                v-model="deletePassword"
+                                class="form-input styled-input"
+                                placeholder="Enter your password to confirm"
+                                autocomplete="current-password"
+                            />
+                        </div>
+                        <small v-if="deleteError" class="error-text">{{ deleteError }}</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button
+                            type="button"
+                            class="delete-button"
+                            :disabled="!deletePassword || isDeleting"
+                            @click="showDeleteConfirm = true"
+                        >
+                            {{ isDeleting ? 'Deleting...' : 'Delete Account' }}
+                        </button>
+                    </div>
+                </div>
             </form>
+            <ConfirmModal
+                v-model:visible="showDeleteConfirm"
+                title="Delete account?"
+                :confirmDisabled="isDeleting || !deletePassword"
+                confirmText="Delete"
+                cancelText="Cancel"
+                :error="deleteError"
+                @confirm="handleDeleteAccount"
+            >
+                <p>Are you sure you want to permanently delete your account? This action cannot be undone.</p>
+            </ConfirmModal>
         </div>
         <div v-else class="loading">
             <p>Loading user profile...</p>
@@ -358,7 +454,6 @@ main {
     padding: 1.5rem;
     max-width: 1400px;
     margin: 0 auto;
-    height: calc(100vh - 3rem);
     display: flex;
     flex-direction: column;
 }
@@ -375,13 +470,22 @@ h2 {
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    padding: 0.5rem 0.75rem;
     background: var(--color-background-soft);
     border: 1px solid var(--color-border);
     color: var(--color-text);
     border-radius: 8px;
     margin: 0 0 1rem 0;
+    padding: 0.5rem 0.75rem;
+    /* Pin to bottom center of the viewport so the notification floats above content */
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 1.25rem;
+    z-index: 2200;
+    max-width: calc(100% - 2rem);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
 }
+
 .unsaved-text {
     font-weight: 600;
     font-size: 0.95rem;
@@ -396,9 +500,6 @@ h2 {
 .unsaved-actions .secondary-button {
     padding: 0.35rem 0.6rem;
     font-size: 0.9rem;
-}
-.unsaved-indicator.card {
-    padding: 0.5rem 0.75rem;
 }
 
 .profile-container {
@@ -564,6 +665,51 @@ h2 {
     font-size: 0.8rem;
 }
 
+/* Delete / danger section styles */
+.danger-section {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.danger-section .danger-note {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin: 0;
+}
+.delete-button {
+    background: var(--color-threat);
+    color: var(--vt-c-white);
+    border: none;
+    padding: 0.55rem 0.9rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: filter 0.2s ease;
+}
+
+@media (hover: hover) {
+    .delete-button:hover:not(:disabled) {
+        filter: brightness(0.8);
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    @media (hover: hover) {
+        .delete-button:hover:not(:disabled) {
+            filter: brightness(1.2);
+        }
+    }
+}
+
+.delete-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--color-threat-light);
+}
+
 /* Form Actions */
 .form-actions {
     display: flex;
@@ -605,7 +751,9 @@ h2 {
 @media (max-width: 768px) {
     main {
         padding: 1rem;
+        margin-bottom: 6rem;
         height: auto;
+        width: 100%;
     }
     
     .profile-container {
@@ -629,6 +777,10 @@ h2 {
     .profile-form {
         height: auto;
     }
+
+    .unsaved-indicator {
+        width: calc(100% - 2rem);
+    }
 }
 
 /* Ensure gradient border pseudo-element is visible above the form background
@@ -646,5 +798,32 @@ h2 {
     z-index: 1; /* keep input above the gradient so text is interactive */
     -webkit-background-clip: padding-box;
     background-clip: padding-box;
+}
+
+/* Modal styles moved to ConfirmModal.vue */
+
+/* Transition for the dirty-notification Vue <Transition name="dirty-notification"> */
+.dirty-notification-enter-from,
+.dirty-notification-leave-to {
+    opacity: 0;
+    /* start slightly lower when animating in from the bottom */
+    transform: translateY(8px);
+}
+.dirty-notification-enter-active,
+.dirty-notification-leave-active {
+    transition: opacity 220ms cubic-bezier(.2,.8,.2,1), transform 220ms cubic-bezier(.2,.8,.2,1);
+}
+.dirty-notification-enter-to,
+.dirty-notification-leave-from {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .dirty-notification-enter-active,
+    .dirty-notification-leave-active {
+        transition: none !important;
+    }
 }
 </style>

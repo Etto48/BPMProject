@@ -76,7 +76,7 @@ updateImage();
 <template>
     <div v-if="!isLoading && currentUser" class="account-menu-container" ref="menuRef">
         <div class="account-button" @click="toggleMenu">
-            <img alt="Account Icon" :src="accountIcon" width="32" height="32" />
+            <img class="account-icon" alt="Account Icon" :src="accountIcon" width="32" height="32" />
             <span class="account-name">{{ accountName }}</span>
             <ChevronDown :class="{ rotated: isMenuOpen }" />
         </div>
@@ -104,6 +104,11 @@ updateImage();
 </template>
 
 <style scoped>
+.account-icon {
+    border-radius: 50%;
+    object-fit: cover;
+}
+
 .account-menu-container {
     position: relative;
     height: 100%;

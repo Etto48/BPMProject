@@ -31,6 +31,10 @@ function fetchProjects() {
     });
 }
 
+function removeProject(id: number) {
+    projects.value = projects.value.filter((project) => project.id !== id);
+}
+
 function createNewProject() {
     router.push('/project/create');
 }
@@ -49,10 +53,12 @@ fetchProjects();
             <ProjectCard
                 v-for="project in projects"
                 :key="project.id"
+                :projectId="project.id"
                 :title="project.title"
                 :description="project.description"
 
                 @click="router.push(`/project/${project.id}/${stepNames[project.currentStep]}`)"
+                @deleted="removeProject"
             />
             <NewProjectButton @click="createNewProject"/>
         </div>

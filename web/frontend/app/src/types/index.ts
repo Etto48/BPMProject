@@ -36,6 +36,10 @@ export type UserUpdateData = {
   companyDescription: string
 }
 
+export type DeleteUserData = {
+  password: string
+}
+
 export type Project = {
   title: string
   description: string
