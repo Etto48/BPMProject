@@ -11,6 +11,9 @@ class UserData(BaseModel):
     password: str
     companyDescription: str = ""
 
+class DeleteUserData(BaseModel):
+    password: str
+
 class UserUpdateData(BaseModel):
     username: Optional[str] = None
     password: Optional[str] = None

@@ -22,6 +22,18 @@ class UserRepository:
         except psycopg.IntegrityError:
             # Username already exists
             return None
+        
+    async def delete_user_by_id(self, userId: int) -> Optional[UserInDB]:
+        """Delete a user by ID"""
+        async with self.conn.cursor() as cursor:
+            await cursor.execute(
+                "DELETE FROM users WHERE id = %s RETURNING id, username, password_hash, company_description",
+                (userId,)
+            )
+            row = await cursor.fetchone()
+            if row:
+                return UserInDB(id=row[0], username=row[1], passwordHash=row[2], companyDescription=row[3])
+            return None
 
     async def get_user_by_username(self, username: str) -> Optional[UserInDB]:
         """Get user by username, returns (id, username, password_hash)"""
@@ -83,6 +95,17 @@ class ProjectRepository:
                         return ProjectInDB(id=projectId[0], title=project.title, description=project.description, currentStep=0, riskScoreThreshold=0.1)
                     return None
         except psycopg.IntegrityError:
+            return None
+
+    async def delete_project_by_id(self, project_id: int, user_id: int) -> Optional[ProjectInDB]:
+        async with self.conn.cursor() as cursor:
+            await cursor.execute(
+                "DELETE FROM projects WHERE id = %s AND user_id = %s RETURNING id, title, description, current_step, risk_score_threshold",
+                (project_id, user_id)
+            )
+            row = await cursor.fetchone()
+            if row:
+                return ProjectInDB(id=row[0], title=row[1], description=row[2], currentStep=row[3], riskScoreThreshold=row[4])
             return None
 
     async def get_project_by_id(self, projectId: int, userId: int) -> Optional[ProjectInDB]:

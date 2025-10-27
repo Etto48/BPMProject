@@ -8,7 +8,7 @@ from fastapi.params import File
 from fastapi.responses import JSONResponse
 from database import UserRepository, ProjectRepository
 from auth import hash_password, verify_password
-from models import Project, ProjectInDB, QualitativeAnalysisData, Risk, RiskInDB, TrackedRisk, TrackedScoredRisk, TrackedManagedRisk, UserData, UserResponse, UserInDB, UserUpdateData
+from models import DeleteUserData, Project, ProjectInDB, QualitativeAnalysisData, Risk, RiskInDB, TrackedRisk, TrackedScoredRisk, TrackedManagedRisk, UserData, UserResponse, UserInDB, UserUpdateData
 
 from llm import LLM # type: ignore
 
@@ -121,6 +121,46 @@ async def login(
 async def me(current_user: UserResponse = Depends(get_current_user)):
     """Get current user information"""
     return current_user
+
+@api.delete("/me")
+async def delete_account(
+    request: Request,
+    user_data: DeleteUserData,
+    db: UserRepository = Depends(get_user_repository)
+) -> JSONResponse:
+    """Delete current user account"""
+    if "user_id" not in request.session:
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    user_id = request.session["user_id"]
+
+    user = await db.get_user_by_id(user_id)
+    if user is None:
+        request.session.clear()
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    
+    if not verify_password(user_data.password, user.passwordHash):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials"
+        )
+
+    deleted = await db.delete_user_by_id(user_id)
+    if deleted is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    request.session.clear()
+    response = JSONResponse({"message": "Account deleted"})
+    response.delete_cookie("session")
+    return response
 
 @api.post("/me/picture")
 async def upload_profile_picture(
@@ -340,6 +380,27 @@ async def get_project(
             detail="Project not found"
         )
     return project
+
+@api.delete("/projects/{project_id}")
+async def delete_project(
+    request: Request,
+    project_id: int,
+    db: ProjectRepository = Depends(get_project_repository),
+) -> dict:
+    if "user_id" not in request.session:
+        raise HTTPException(
+            status_code=401,
+            detail="Not logged in"
+        )
+    user_id = request.session["user_id"]
+
+    deleted_project = await db.delete_project_by_id(project_id, user_id)
+    if not deleted_project:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found"
+        )
+    return {"message": "Project deleted"}
 
 @api.get("/projects")
 async def list_projects(
