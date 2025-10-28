@@ -70,6 +70,10 @@ watch(currentUser, (newUser) => {
     }
 })
 
+function openHelp() {
+    window.open('https://raw.githubusercontent.com/Etto48/BPMProject/refs/heads/main/docs/tex/.aux/main.pdf', '_blank');
+}
+
 updateImage();
 </script>
 
@@ -89,7 +93,7 @@ updateImage();
                     <User :size="20" />
                     <span>Profile</span>
                 </button>
-                <button @click="closeMenu" class="dropdown-item">
+                <button @click="{{closeMenu(); openHelp()}}" class="dropdown-item">
                     <HelpCircle :size="20" />
                     <span>Help</span>
                 </button>
