@@ -6,5 +6,6 @@ if [ "$MODE" = "production" ]; then
   npm install -g serve
   serve -s dist -l ${FRONTEND_PORT}
 else
+  npm install
   npm run dev -- --host --port ${FRONTEND_PORT}
 fi
